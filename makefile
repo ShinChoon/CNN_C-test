@@ -12,6 +12,7 @@ OUTPUTDIR := $(BASEDIR)/output
 
 CC := riscv64-unknown-elf-gcc
 CXX := riscv64-unknown-elf-g++ 
+CFLAGS += -std=c99
 CFLAGS += -lm
 default: all
 

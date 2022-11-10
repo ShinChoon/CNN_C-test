@@ -18,6 +18,8 @@ void _CnnSetup(Cnn *cnn, MatSize input_size, int output_size);
 void _ImportCnn(Cnn *cnn, const char *filename);
 ImageArray _ReadImages(const char *filename);
 const char *getfield(char *line, int num);
+void load_weights(FILE *file_point, CovLayer *cc);
+void load_bias(FILE *file_point, CovLayer *cc);
 
 int main()
 {
@@ -260,60 +262,56 @@ void _ImportCnn(Cnn *cnn, const char *filename)
     if (file_point == NULL)
         printf("[-] <ImportCnn> Open file failed! <%s>\n", filename);
 
+    load_weights(file_point, cnn->C1);
+    load_bias(file_point, cnn->C1);
+
+    fclose(file_point);
+}
+
+void load_weights(FILE *file_point, CovLayer *cc)
+{
     char line[1024];
-    while (fgets(line, 1024, file_point)){
-        for(int h=1;h<4;h++)
+    for (int i = 0; i < cc->input_channels; i++)
+        for (int j = 0; j < cc->output_channels; j++)
         {
-        char *tmp = strdup(line);
+            for (int r = 0; r < cc->map_size; r++)
+            {
+                do
+                {
+                    fgets(line, 1024, file_point);
+                } while (strcmp(line, "\n") == 0 || strcmp(line, "\n\n") == 0);
+                for (int c = 0; c < cc->map_size; c++)
+                {
+                    int h = c + 1;
+                    char *tmp = strdup(line);
+                    char *value = getfield(tmp, h);
+                    if (value != NULL)
+                        printf("%s ", value);
+                    free(tmp);
+                }
+                printf("\n");
+            }
+        }
+}
+
+void load_bias(FILE *file_point, CovLayer *cc)
+{
+    char line[1024];
+    for (int i = 0; i < cc->input_channels; i++)
+    {
+        do
+        {
+            fgets(line, 1024, file_point);
+        } while (strcmp(line, "\n") == 0 || strcmp(line, "\n\n") == 0);
+        for (int i = 0; i < cc->output_channels; i++)
+        {
+            int h = i + 1;
+            char *tmp = strdup(line);
             char *value = getfield(tmp, h);
             if (value != NULL)
                 printf("%s ", value);
-        free(tmp);
+            free(tmp);
         }
-
         printf("\n");
-        // NOTE strtok clobbers tmp
     }
-
-        // int i, j, c, r;
-
-        // for (i = 0; i < cnn->C1->input_channels; i++)
-        // {
-        //     for (j = 0; j < cnn->C1->output_channels; j++)
-        //     {
-        //         for (r = 0; r < cnn->C1->map_size; r++)
-        //         {
-        //             for (c = 0; c < cnn->C1->map_size; c++)
-        //             {
-        //                 float *in = (float *)malloc(sizeof(float));
-        //                 fread(in, sizeof(float), 1, file_point);
-        //                 cnn->C1->map_data[i][j][r][c] = *in;
-        //             }
-        //             printf(";\n");
-        //         }
-        //         printf("\n");
-        //     }
-        //     printf("\n");
-        // }
-
-        // for (i = 0; i < cnn->C1->output_channels; i++)
-        //     fread(&cnn->C1->basic_data[i], sizeof(float), 1, file_point);
-
-        // for (i = 0; i < cnn->C3->input_channels; i++)
-        //     for (j = 0; j < cnn->C3->output_channels; j++)
-        //         for (r = 0; r < cnn->C3->map_size; r++)
-        //             for (c = 0; c < cnn->C3->map_size; c++)
-        //                 fread(&cnn->C3->map_data[i][j][r][c], sizeof(float), 1, file_point);
-
-        // for (i = 0; i < cnn->C3->output_channels; i++)
-        //     fread(&cnn->C3->basic_data[i], sizeof(float), 1, file_point);
-
-        // for (i = 0; i < cnn->O6->output_num; i++)
-        //     for (j = 0; j < cnn->O6->input_num; j++)
-        //         fread(&cnn->O6->wData[i][j], sizeof(float), 1, file_point);
-
-        // for (i = 0; i < cnn->O6->output_num; i++)
-        //     fread(&cnn->O6->basic_data[i], sizeof(float), 1, file_point);
-
-        fclose(file_point);
 }

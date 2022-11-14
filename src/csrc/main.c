@@ -31,6 +31,8 @@
   
 // 	//Setup CNN
 // 	Cnn* cnn=(Cnn*)malloc(sizeof(Cnn));
+// 	printf("input_size: %d\n", input_size);
+// 	printf("output_size: %d\n", output_size);
 // 	CnnSetup(cnn,input_size,output_size);
 // 	printf("[+] CNN setup finished!\n");
     

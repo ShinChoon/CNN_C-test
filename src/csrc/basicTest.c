@@ -1,25 +1,13 @@
 // Main function of CNN Train and Test.
 //
 
-#include <stdlib.h> //random
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 #include <time.h> //random seed
 #include <assert.h>
-#include "cnn.h"
+#include "basicTest.h"
 
-#define AVG_POOLING 0 // Pooling with average
-#define MAX_POOLING 1 // Pooling with Maximum
-#define MIN_POOLING 2 // Pooling with Minimum
-
-float **weigths_mapping(Cnn *cnn);
-float **inputs_mapping(float **inputdata);
-void _CnnFF(Cnn *cnn, float **input_data);
-void _CnnSetup(Cnn *cnn, MatSize input_size, int output_size);
-void _ImportCnn(Cnn *cnn, const char *filename);
-ImageArray _ReadImages(const char *filename);
-const char *getfield(char *line, int num);
-void load_weights(FILE *file_point, CovLayer *cc);
-void load_bias(FILE *file_point, CovLayer *cc);
 
 int main()
 {
@@ -49,12 +37,15 @@ int main()
     printf("[+] Import CNN finished!\n");
     int test_images_num = 100;
     float incorrect_ratio = 1.0;
+    float **input_data_array;
+    float **weigth_array;
 
-    // float **weigthts = weigths_mapping(cnn);
-    // float **imagedata = inputs_mapping(test_images->image_point[0].image_data);
     _ImportCnn(cnn, cnn_arch_filename);
+    input_data_array = inputs_mapping(&(test_images->image_point[0]), input_size);
+    weigth_array = weigths_mapping(cnn);
 
-    _CnnFF(cnn, test_images->image_point[0].image_data);
+    /*after convolution result from ADC*/
+    // _CnnFF(cnn, test_images->image_point[0].image_data);
 
     return 0;
 }
@@ -70,6 +61,7 @@ void _CnnSetup(Cnn *cnn, MatSize input_size, int output_size)
     // Layer1 Cov input size: {28,28}
     temp_input_size.columns = input_size.columns;
     temp_input_size.rows = input_size.rows;
+
     cnn->C1 = InitialCovLayer(temp_input_size.columns,
                               temp_input_size.rows, map_size, 1, 4, SAME);
 
@@ -82,7 +74,7 @@ void _CnnSetup(Cnn *cnn, MatSize input_size, int output_size)
 
 void _CnnFF(Cnn *cnn, float **input_data)
 /*
-    1st Convolution + Pooling
+    1st Activation + Pooling
 */
 {
     int output_sizeW = cnn->S2->input_width;
@@ -128,8 +120,18 @@ ImageArray _ReadImages(const char *filename)
     }
 
     // Read images from file with file_point
+    int magic_number = 0;     // magic number
+    int number_of_images = 0; // Images' number
     int n_rows = 0;           // number of rows of an image<image hight>
     int n_columns = 0;        // number of cols of an image<image width>
+
+    // >Big-End Style, So Reverse the Integer. Read magic number
+    fread((char *)&magic_number, sizeof(magic_number), 1, file_point);
+    magic_number = ReverseInt(magic_number);
+
+    // >Big-End. Read the number of images.
+    fread((char *)&number_of_images, sizeof(number_of_images), 1, file_point);
+    number_of_images = ReverseInt(number_of_images);
 
     // Read the rows and cols of an image
     fread((char *)&n_rows, sizeof(n_rows), 1, file_point);
@@ -173,6 +175,8 @@ float **weigths_mapping(Cnn *cnn)
     /*convert 2D map to 1D*/
     float map_array[1][4][9];
     int k2 = 0;
+    int drift_x = 0;
+    int drift_y = 0;
     for (int j = 0; j < (cnn->C1->input_channels); j++)
         for (int i = 0; i < (cnn->C1->output_channels); i++)
         {
@@ -182,63 +186,92 @@ float **weigths_mapping(Cnn *cnn)
                 for (int y = 0; y < 3; y++)
                 {
                     map_array[j][i][k2] = cnn->C1->map_data[j][i][x][y];
-                    printf("%f ", map_array[j][i][k2]);
                     k2++;
                 }
             }
             k2 = 0;
-            printf("\n");
         }
 
-    /* in the future to map the weights like this*/
-    /*convert 1D array to 2D*/
-    printf("weights rotate 90 degree\n");
-    static float weights_map[4][9];
-    for (int j = 0; j < (cnn->C1->input_channels); j++)
+    static float VMM_weights_map[IMCcol][IMCrow] = {0};
+
+    for (int r = 0; r < IMCcol / cnn->C1->output_channels; r++)
     {
-        for (int d = 0; d < 9; d++)
+        for (int h = 0; h < cnn->C1->output_channels; h++)
         {
-            for (int i = 0; i < (cnn->C1->output_channels); i++)
+            for (int i = 0; i < 9; i++)
             {
-                weights_map[i][d] = map_array[j][i][d];
-                printf("%f ", weights_map[i][d]);
+                VMM_weights_map[h + drift_x][i + drift_y] = map_array[0][h][i];
             }
-            printf("\n");
         }
-        printf(";\n");
+        drift_x += 4;
+        drift_y += 3;
     }
-    return weights_map;
+
+    // /*debug*/
+    // for (int i = 0; i < sizeof(VMM_weights_map) / sizeof(VMM_weights_map[0]);i++)
+    // {
+    //     for (int h = 0; h < sizeof(VMM_weights_map[0]) / sizeof(VMM_weights_map[0][0]); h++)
+    //     printf("%f ", VMM_weights_map[i][h]);
+
+    //     printf("\n");
+
+    // }
+
+    return VMM_weights_map;
 }
 
-float **inputs_mapping(float **input_data)
+float **inputs_mapping(MnistImage *image, MatSize input_size)
+/*Create 9x1 lines of image data and concatenate lines into 2D array*/
 {
+    MatSize temp_input_size;
+    temp_input_size.columns = input_size.columns;
+    temp_input_size.rows = input_size.rows;
+
     printf("below is image map\n");
 
     /*convert 2D array to 1D*/
-    float image_array[784];
-    static float image_map[18][32];
-    int k = 0;
-    for (int x = 0; x < 28; x++)
-        for (int y = 0; y < 28; y++)
-        {
-            image_array[k] = input_data[x][y];
-            k++;
-        }
-    /*take 18 pixels and print by 32 columns*/
-    /*convert 1D array to 2D*/
-    int drift_factor = 400;
-    for (int i = 0; i < 18; i++)
+    float VMM_input_array[80][36];
+    int index_VMM_input_array = 0;
+    float VMM_input[IMCrow];
+    int count_x = 0;
+    int count_y = 0;
+    /*create image data metrix 3x3 for weights to associate*/
+    int index_VMM_input = 1;
+    for (int d = 0; d < 32; d++)
     {
-        for (int h = 0; h < 32; h++)
+        for (int i = 0; i < 30; i++)
         {
-            image_map[i][h] = image_array[i + drift_factor];
-            printf("%.2f ,", image_map[i][h]);
+            int r = 0;
+            int c = 0;
+            for (r = 0 + i * 3; (r < 3 + i * 3) && (r < 28); r++)
+            {
+                for (c = 0 + d; (c < d + 3) && (c <28); c++)
+                {
+                    // printf("%d,%d  ", r, c);
+                    VMM_input[count_x] = image->image_data[r][c];
+                    count_x++;
+                    index_VMM_input++;
+                    if(index_VMM_input >36)
+                    {
+                        index_VMM_input = 1;
+                        if (r < image->number_of_columns - 1)
+                            r -= 4;
+                        // printf("\n\n");
+                        count_x = 0;
+                        for(int h=0; h<sizeof(VMM_input)/sizeof(VMM_input[0]); h++)
+                            VMM_input_array[count_y][h] = VMM_input[h];
+                        count_y++;
+                    }
+                }
+            }
         }
-        printf(";\n");
     }
 
-    return image_map;
+
+    return VMM_input_array;
 }
+
+
 
 const char *getfield(char *line, int num)
 {
@@ -262,6 +295,7 @@ void _ImportCnn(Cnn *cnn, const char *filename)
     if (file_point == NULL)
         printf("[-] <ImportCnn> Open file failed! <%s>\n", filename);
 
+/*Loading C1 weights and bias, C1 has been initialized in _Convsetup*/
     load_weights(file_point, cnn->C1);
     load_bias(file_point, cnn->C1);
 
@@ -286,10 +320,12 @@ void load_weights(FILE *file_point, CovLayer *cc)
                     char *tmp = strdup(line);
                     char *value = getfield(tmp, h);
                     if (value != NULL)
-                        printf("%s ", value);
+                    {
+                        float number = strtod(value, NULL);
+                        cc->map_data[i][j][r][c] = number;
+                    }
                     free(tmp);
                 }
-                printf("\n");
             }
         }
 }
@@ -309,9 +345,28 @@ void load_bias(FILE *file_point, CovLayer *cc)
             char *tmp = strdup(line);
             char *value = getfield(tmp, h);
             if (value != NULL)
-                printf("%s ", value);
+            {
+                float number = strtod(value, NULL);
+                cc->basic_data[i] = number;
+            }
             free(tmp);
         }
-        printf("\n");
     }
+}
+
+VMM *initializeVMM(Cnn *cnn)
+{
+    VMM *vmm = malloc(sizeof(VMM));
+    vmm->Cnn = cnn;
+    vmm->MACoperation = MACoperation;
+    return vmm;
+}
+
+float** MACoperation(float** input_array, float** weight_array){
+    static float output_array[IMCcol]={0};
+    for(int i =0; i<sizeof(input_array)/sizeof(input_array[0]); i++)
+        for (int i = 0; i < sizeof(input_array) / sizeof(input_array[0]); i++)
+
+
+    return output_array;
 }

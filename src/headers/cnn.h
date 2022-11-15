@@ -80,13 +80,6 @@ typedef struct ConvolutionalNeuralNetwork
 	float *L;
 } Cnn;
 
-typedef struct VMMStructure
-{
-	Cnn *Cnn;
-	float **(*MACoperation)(float **input_array, float **weight_array);
-
-} VMM;
-
 // Train Options
 typedef struct TrainOptions
 {

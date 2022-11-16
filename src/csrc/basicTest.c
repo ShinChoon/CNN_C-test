@@ -41,12 +41,14 @@ int main()
     _ImportCnn(cnn, cnn_arch_filename);
 /*map weigths and iamge as in IMC shape*/
     int VMM_turns = 0;
+    int weights_number=0;
     float **input_data_array = inputs_mapping(&(test_images->image_point[0]), input_size, &VMM_turns);
-    float** weight_array = weigths_mapping(cnn);
-/*initalize VMM and use MAC operation*/
-    VMM* vmm = initializeVMM(cnn);
+    float** weight_array = weights_mapping(cnn, &weights_number);
+    /*initalize VMM and use MAC operation*/
+    VMM *vmm = initializeVMM(cnn);
     float **output_array = vmm->MACoperation(input_data_array, weight_array, VMM_turns);
 
+    Conv_image(cnn, output_array, VMM_turns, weights_number);
     /*after convolution result from ADC*/
     // _CnnFF(cnn, test_images->image_point[0].image_data);
 
@@ -172,7 +174,7 @@ ImageArray _ReadImages(const char *filename)
     return image_array;
 }
 
-float **weigths_mapping(Cnn *cnn)
+float **weights_mapping(Cnn *cnn, int* weights_number)
 {
 
     printf("below is weighs map\n");
@@ -215,12 +217,21 @@ float **weigths_mapping(Cnn *cnn)
         drift_y += 3;
     }
 
-    // /*debug*/
-    // for (int i = 0; i < sizeof(VMM_weights_map) / sizeof(VMM_weights_map[0]);i++)
-    // {
-    //     for (int h = 0; h < sizeof(VMM_weights_map[0]) / sizeof(VMM_weights_map[0][0]); h++)
-    //     printf("%f ", VMM_weights_map[i][h]);
+    for (int i = 0; i < IMCcol; i++)
+    {
+        if (((i + 1) % 4 == 0) && (i > 1))
+            (*weights_number)++;
+    }
 
+    /*debug*/
+    // for (int i = 0; i < IMCcol;i++)
+    // {
+    //     for (int h = 0; h < IMCrow; h++)
+    //     printf("%.2f ", VMM_weights_map[i][h]);
+    //     if(((i+1)%4==0)&& (i > 1))
+    //     {
+    //         printf("!!\n");
+    //     }
     //     printf("\n");
 
     // }
@@ -240,11 +251,12 @@ float **inputs_mapping(MnistImage *image, MatSize input_size, int* VMM_turns)
     /*convert 2D array to 1D*/
     int index_VMM_input_array = 0;
     float VMM_input[IMCrow];
+    int size_xx = sizeof(VMM_input)/sizeof(VMM_input[0]);
     float _local_VMM_input_lists[1000][IMCrow];
     int count_x = 0;
     int count_y = 0;
-    /*create image data metrix 3x3 for weights to associate*/
     int index_VMM_input = 1;
+    int columns_number = image->number_of_columns;
     int r = 0;
     int c = 0;
     for (int d = 0; d < 32; d++)
@@ -255,20 +267,48 @@ float **inputs_mapping(MnistImage *image, MatSize input_size, int* VMM_turns)
             {
                 for (c = 0 + d; (c < d + 3) && (c < 28); c++)
                 {
-                    // printf("%d,%d  ", r, c);
+                    /*collect image data into input array*/
+                    // printf("%d,%d ", r, c);
                     VMM_input[count_x] = image->image_data[r][c];
                     count_x++;
                     index_VMM_input++;
                     if(index_VMM_input >36)
                     {
                         index_VMM_input = 1;
-                        if (r < image->number_of_columns - 1)
+                        if (r < columns_number - 1)
+                        {
                             r -= 4;
-                        // printf("!!\n\n");
-                        count_x = 0;
-                        for(int h=0; h<sizeof(VMM_input)/sizeof(VMM_input[0]); h++)
-                            _local_VMM_input_lists[count_y][h] = VMM_input[h];
-                        count_y++;
+                            // printf("\n");
+                            count_x = 0;
+                            for (int h = 0; h < size_xx; h++)
+                                _local_VMM_input_lists[count_y][h] = VMM_input[h];
+                            count_y++;
+                        }
+                        else
+                        {
+                            /*once it moved to the end, new VMM created with only 4 rows mapped*/
+                            // printf("!!!\n");
+                            count_x = 0;
+                            /*store the current input array into list*/
+                            for (int h = 0; h < size_xx; h++)
+                                _local_VMM_input_lists[count_y][h] = VMM_input[h];
+
+                            float temp_input[size_xx];
+                            /*duplicate four lines from previous line*/
+                            for (int h = 0; h < size_xx; h++)
+                                if((h<4))
+                                    temp_input[h] = VMM_input[size_xx + h - 4];
+                                else
+                                    temp_input[h] = 0;
+                                
+
+                            /*store the new input array into list*/
+                            count_y++;
+                            for (int h = 0; h < size_xx; h++)
+                                _local_VMM_input_lists[count_y][h] = temp_input[h];
+                            /*go to next line*/
+                            count_y++;
+                        }
                     }
                 }
             }
@@ -280,7 +320,7 @@ float **inputs_mapping(MnistImage *image, MatSize input_size, int* VMM_turns)
     printf("\ncount_x: %d\n", count_x);
     printf("\ncount_y: %d\n", count_y);
 
-    printf("length: %d\n", sizeof(VMM_input)/sizeof(VMM_input[0]));
+    printf("length: %d\n", size_xx);
 
     float **VMM_input_array;
     VMM_input_array = malloc(sizeof(float*)*count_y);
@@ -291,6 +331,14 @@ float **inputs_mapping(MnistImage *image, MatSize input_size, int* VMM_turns)
             VMM_input_array[i][h] = _local_VMM_input_lists[i][h];
     }
     *VMM_turns = count_y;
+
+    // for(int i=0; i<count_y; i++)
+    // {
+    // for(int h=0; h<size_xx; h++)
+    //     printf("%f ",  _local_VMM_input_lists[i][h]);
+    // printf("\n");
+    // }
+
     return VMM_input_array;
 }
 
@@ -378,6 +426,7 @@ void load_bias(FILE *file_point, CovLayer *cc)
 }
 
 VMM* initializeVMM(Cnn *cnn)
+/*initalize the VMM and return VMM*/
 {
     VMM *vmm = malloc(sizeof(VMM));
     vmm->Cnn = cnn;
@@ -387,10 +436,10 @@ VMM* initializeVMM(Cnn *cnn)
     return vmm;
 }
 
-float** MACoperation(float** input_array, float** weight_array, int VMM_turns){
+float **MACoperation(float **input_array, float **weight_array, int VMM_turns)
+{
     /*input array [78][36] weight_array[32][36]*/
     float **output_array;
-
     output_array = malloc(sizeof(float *) * VMM_turns);
     for (int i = 0; i < VMM_turns; i++)
     {
@@ -415,4 +464,61 @@ float** MACoperation(float** input_array, float** weight_array, int VMM_turns){
     // }
 
     return output_array;
+}
+
+
+void Conv_image(Cnn* cnn, float** input_array, int*VMM_turns, int weights_number)
+{
+    int channels_number = cnn->C1->output_channels;
+    /*in each VMM turns*/
+    int column_index = 0;
+    int row_index = 0;
+    int leftover_number = cnn->S2->input_width % weights_number;
+
+    printf("leftover:%d\n", leftover_number);
+
+    for(int i=0; i<VMM_turns; i++)
+        if (((i+1)%channels_number == 0) &&(i>1))
+        /* when it comes to end of coulmns*/
+        {
+                for (int h = 0; h < leftover_number*channels_number; h++)
+                {
+                    /*for each scanning x 4*/
+                    if (((h+1) % channels_number == 0) && (h > 1))
+                    {
+                        printf("i: %d, h: %d\n", i, h);
+                        for (int d = 0; d < channels_number; d++)
+                        {
+                            /*assign value from i VMM turn for dth channel, ith column, h element*/
+                            cnn->C1->v[d][column_index][row_index] = input_array[i][h + d];
+                        }
+                        row_index++;
+                    }
+                    printf("row_index: %d\n", row_index);
+
+                }
+
+                column_index++;
+                printf("column_index: %d\n",column_index);
+                row_index=0;
+        }
+        else
+            /*when it is on the way*/
+        {
+            for(int h=0; h<IMCcol; h++)
+            {
+            /*for each scanning x 4*/
+                if(((h+1)%channels_number==0)&&(h>1))
+                {
+                    for(int d=0; d<channels_number; d++){
+                        /*assign value from i VMM turn for dth channel, ith column, h element*/
+                        cnn->C1->v[d][column_index][row_index] = input_array[i][h + d];
+                        // printf("d: %d, column_index: %d, ", )
+                    }
+                    row_index++;
+                }
+                printf("row_index: %d\n", row_index);
+            }
+        }
+
 }

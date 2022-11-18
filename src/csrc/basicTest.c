@@ -39,21 +39,28 @@ int main()
 
 /*load weights from csv file*/
     _ImportCnn(cnn, cnn_arch_filename);
-/*map weigths and iamge as in IMC shape*/
-    int VMM_turns = 0;
-    int weights_number=0;
-    float **input_data_array = inputs_mapping(&(test_images->image_point[0]), input_size, &VMM_turns);
-    float** weight_array = weights_mapping(cnn, &weights_number);
-    /*initalize VMM and use MAC operation*/
-    VMM *vmm = initializeVMM(cnn);
-    float **output_array = vmm->MACoperation(input_data_array, weight_array, VMM_turns);
 
-    Conv_image(cnn, output_array, VMM_turns, weights_number);
-    /*after convolution result from ADC*/
-    // _CnnFF(cnn, test_images->image_point[0].image_data);
+    /*save data as image*/
+    FILE *file_point = NULL;
+    save_image(cnn->C1->input_height, 
+                test_images->image_point[0].image_data, 
+                file_point, "image1.pgm");
 
 
-    return 0;
+        // /*map weigths and iamge as in IMC shape*/
+        //     int VMM_turns = 0;
+        //     int weights_number=0;
+        //     float **input_data_array = inputs_mapping(&(test_images->image_point[0]), input_size, &VMM_turns);
+        //     float** weight_array = weights_mapping(cnn, &weights_number);
+        //     /*initalize VMM and use MAC operation*/
+        //     VMM *vmm = initializeVMM(cnn);
+        //     float **output_array = vmm->MACoperation(input_data_array, weight_array, VMM_turns);
+
+        //     Conv_image(cnn, output_array, VMM_turns, weights_number);
+        //     /*after convolution result from ADC*/
+        //     _CnnFF(cnn, test_images->image_point[0].image_data);
+
+        return 0;
 }
 
 void _CnnSetup(Cnn *cnn, MatSize input_size, int output_size)
@@ -147,26 +154,28 @@ ImageArray _ReadImages(const char *filename)
 
     // define strutrue of image array
     ImageArray image_array = (ImageArray)malloc(sizeof(ImageArray));
-    image_array->number_of_images = 1; // number of images
+    image_array->number_of_images = number_of_images; // number of images
     // array of all images.
-    image_array->image_point = (MnistImage *)malloc(1 * sizeof(MnistImage));
+    image_array->image_point = (MnistImage *)malloc(number_of_images * sizeof(MnistImage));
 
-    int row, column; // Temp for row and column
-
-    image_array->image_point[0].number_of_rows = n_rows;       //
-    image_array->image_point[0].number_of_columns = n_columns; // set
-    image_array->image_point[0].image_data = (float **)malloc(n_rows * sizeof(float *));
-
-    for (row = 0; row < n_rows; ++row) // from 0 -> n_rows-1
+    int row, column;                           // Temp for row and column
+    for (int i = 0; i < number_of_images; ++i) // Images from 0 -> number_of_images-1
     {
-        image_array->image_point[0].image_data[row] = (float *)malloc(n_columns * sizeof(float));
-        for (column = 0; column < n_columns; ++column) // from 0 -> n_columns-1
+        image_array->image_point[i].number_of_rows = n_rows;       //
+        image_array->image_point[i].number_of_columns = n_columns; // set
+        image_array->image_point[i].image_data = (float **)malloc(n_rows * sizeof(float *));
+
+        for (row = 0; row < n_rows; ++row) // from 0 -> n_rows-1
         {
-            unsigned char temp_pixel = 0;
-            // read a pixel 0-255 with 8-bit
-            fread((char *)&temp_pixel, sizeof(temp_pixel), 1, file_point);
-            // Change 8-bit pixel to float.
-            image_array->image_point[0].image_data[row][column] = (float)temp_pixel / 255;
+            image_array->image_point[i].image_data[row] = (float *)malloc(n_columns * sizeof(float));
+            for (column = 0; column < n_columns; ++column) // from 0 -> n_columns-1
+            {
+                unsigned char temp_pixel = 0;
+                // read a pixel 0-255 with 8-bit
+                fread((char *)&temp_pixel, sizeof(temp_pixel), 1, file_point);
+                // Change 8-bit pixel to float.
+                image_array->image_point[i].image_data[row][column] = (float)temp_pixel / 255;
+            }
         }
     }
 
@@ -521,4 +530,32 @@ void Conv_image(Cnn* cnn, float** input_array, int*VMM_turns, int weights_number
             }
         }
 
+}
+
+void save_image(int scale, float **image_data, FILE *filepoint, const char *filename)
+{
+    int temp = 0;
+    filepoint = fopen(filename, "wb");
+
+    // Writing Magic Number to the File
+    fprintf(filepoint, "P2\n");
+
+    // Writing Width and Height
+    fprintf(filepoint, "%d %d\n", scale, scale);
+
+    // Writing the maximum gray value
+    fprintf(filepoint, "255\n");
+    int count = 0;
+    for (int i = 0; i < scale; i++)
+    {
+        for (int j = 0; j < scale; j++)
+        {
+            temp = (int)(image_data[i][j]*255);
+
+            // Writing the gray values in the 2D array to the file
+            fprintf(filepoint, "%d ", temp);
+        }
+        fprintf(filepoint, "\n");
+    }
+    fclose(filepoint);
 }

@@ -22,6 +22,7 @@ void load_bias(FILE *file_point, CovLayer *cc);
 void Conv_image(Cnn *cnn, float **input_array, int *VMM_turns, int weights_number);
 
 float **MACoperation(float **input_array, float **weight_array, int VMM_turns);
+void save_image(int scale, float **image_data, FILE *filepoint, const char *filename);
 
 typedef struct VMMStructure
 {

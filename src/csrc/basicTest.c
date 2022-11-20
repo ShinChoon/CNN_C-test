@@ -41,24 +41,41 @@ int main()
     _ImportCnn(cnn, cnn_arch_filename);
 
     /*save data as image*/
-    FILE *file_point = NULL;
-    save_image(cnn->C1->input_height, 
-                test_images->image_point[0].image_data, 
-                file_point, "image1.pgm");
+    char* filename = (char*)malloc(sizeof(char)*13);
 
 
-        // /*map weigths and iamge as in IMC shape*/
-        //     int VMM_turns = 0;
-        //     int weights_number=0;
-        //     float **input_data_array = inputs_mapping(&(test_images->image_point[0]), input_size, &VMM_turns);
-        //     float** weight_array = weights_mapping(cnn, &weights_number);
-        //     /*initalize VMM and use MAC operation*/
-        //     VMM *vmm = initializeVMM(cnn);
-        //     float **output_array = vmm->MACoperation(input_data_array, weight_array, VMM_turns);
+    /*map weigths and iamge as in IMC shape*/
+        int VMM_turns = 0;
+        int weights_number=0;
+        float **input_data_array = inputs_mapping(&(test_images->image_point[0]), input_size, &VMM_turns);
+        float** weight_array = weights_mapping(cnn, &weights_number);
+        /*initalize VMM and use MAC operation*/
+        VMM *vmm = initializeVMM(cnn);
+        float **output_array = vmm->MACoperation(input_data_array, weight_array, VMM_turns);
 
-        //     Conv_image(cnn, output_array, VMM_turns, weights_number);
-        //     /*after convolution result from ADC*/
-        //     _CnnFF(cnn, test_images->image_point[0].image_data);
+        Conv_image(cnn, output_array, VMM_turns, weights_number);
+
+
+        /*after convolution result from ADC*/
+        _CnnFF(cnn, test_images->image_point[0].image_data);
+
+
+        // /*debug: create pgm files, later use convert in terminal to create png*/
+        // sprintf(filename, "image_%d.pgm", 1);
+        // save_image(cnn->C1->input_height,
+        //         test_images->image_point[0].image_data,
+        //         filename);
+        // for(int i=0; i<cnn->C1->output_channels; i++)
+        // {
+        //     sprintf(filename, "conv_%d.pgm", i);
+        //     save_image(cnn->S2->input_height, cnn->C1->v[i], filename); 
+        // }
+
+        // for(int i=0;i<cnn->S2->output_channels; i++)
+        // {
+        //     sprintf(filename, "pool_%d.pgm", i);
+        //     save_image(cnn->S2->input_height/2, cnn->S2->y[i], filename);
+        // }
 
         return 0;
 }
@@ -484,7 +501,6 @@ void Conv_image(Cnn* cnn, float** input_array, int*VMM_turns, int weights_number
     int row_index = 0;
     int leftover_number = cnn->S2->input_width % weights_number;
 
-    printf("leftover:%d\n", leftover_number);
 
     for(int i=0; i<VMM_turns; i++)
         if (((i+1)%channels_number == 0) &&(i>1))
@@ -495,21 +511,18 @@ void Conv_image(Cnn* cnn, float** input_array, int*VMM_turns, int weights_number
                     /*for each scanning x 4*/
                     if (((h+1) % channels_number == 0) && (h > 1))
                     {
-                        printf("i: %d, h: %d\n", i, h);
                         for (int d = 0; d < channels_number; d++)
                         {
                             /*assign value from i VMM turn for dth channel, ith column, h element*/
-                            cnn->C1->v[d][column_index][row_index] = input_array[i][h + d];
+                            cnn->C1->v[d][row_index][column_index] = input_array[i][h + d];
                         }
                         row_index++;
                     }
-                    printf("row_index: %d\n", row_index);
 
                 }
 
-                column_index++;
-                printf("column_index: %d\n",column_index);
                 row_index=0;
+                column_index++;
         }
         else
             /*when it is on the way*/
@@ -521,19 +534,19 @@ void Conv_image(Cnn* cnn, float** input_array, int*VMM_turns, int weights_number
                 {
                     for(int d=0; d<channels_number; d++){
                         /*assign value from i VMM turn for dth channel, ith column, h element*/
-                        cnn->C1->v[d][column_index][row_index] = input_array[i][h + d];
+                        cnn->C1->v[d][row_index][column_index] = input_array[i][h + d];
                         // printf("d: %d, column_index: %d, ", )
                     }
                     row_index++;
                 }
-                printf("row_index: %d\n", row_index);
             }
         }
 
 }
 
-void save_image(int scale, float **image_data, FILE *filepoint, const char *filename)
+void save_image(int scale, float **image_data,const char *filename)
 {
+    FILE *filepoint = NULL;
     int temp = 0;
     filepoint = fopen(filename, "wb");
 

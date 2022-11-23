@@ -6,7 +6,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <math.h>
-#include <assert.h>
+// #include <assert.h>
 #include "mnist.h"
 
 //Reverse an int32 For Big-End
@@ -32,11 +32,6 @@ ImageArray ReadImages(const char* filename)
 	//Open images file 
 	FILE  *file_point = NULL;
 	file_point = fopen(filename,"rb"); 
-	if(file_point == NULL)  //Failed
-	{
-		printf("[-] ReadImages() Open file [%s] failed!\n",filename);
-		assert(file_point);
-	}
   
 	//Read images from file with file_point
 	int magic_number = 0;     //magic number
@@ -93,9 +88,9 @@ LabelArray ReadLabels(const char* filename)
 {
 	FILE *file_point=NULL;
 	file_point = fopen(filename, "rb");
-	if(file_point==NULL)
-		printf("[-] <ReadLabels> Open file failed! <%s>\n",filename);
-	assert(file_point);
+	// if(file_point==NULL)
+	// 	printf("[-] <ReadLabels> Open file failed! <%s>\n",filename);
+	// assert(file_point);
 
 	int magic_number = 0;  
 	int number_of_labels = 0; 
@@ -171,9 +166,9 @@ void SaveImage(ImageArray image_array,char* filedir)
 		const char* filename=CombineStrings(filedir,CombineStrings(IntToChar(i),".gray"));
 		FILE  *fp=NULL;
 		fp=fopen(filename,"wb");
-		if(fp==NULL)
-			printf("write file failed\n");
-		assert(fp);
+		// if(fp==NULL)
+		// 	printf("write file failed\n");
+		// assert(fp);
 
 		for(r=0;r<image_array->image_point[i].number_of_rows;r++)
 			fwrite(image_array->image_point[i].image_data[r],sizeof(float),image_array->image_point[i].number_of_columns,fp);

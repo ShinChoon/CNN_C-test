@@ -333,14 +333,21 @@ float **inputs_mapping(MnistImage *image, MatSize input_size, int *VMM_turns, in
     int columns_number = image->number_of_columns;
     int r = 0;
     int c = 0;
-    for (int d = 0; d < 32; d++)
+
+    num_inchan = 1;
+    int base_index_x = IMCcol / (num_inchan * num_outchan) + 1;
+    int base_index_y = IMCcol;
+
+    for (int d = 0; d < 32; d++) // base number for index in y direction(0:31)
     {
-        for (int i = 0; i < 10; i++)
+        for (int i = 0; i < 10; i++) // base number for index in x direction from 0 to 9 in one page (0:1:9)
         {
-            for (r = 0 + i * 3; (r < 3 + i * 3) && (r < 28); r++)
+            for (r = 0 + i * 3;                    // initial state
+                 (r < 3 + i * 3) && (r < 28); r++) // index by x direction in one VMM page (0:1:11):(8,8,8):(16:1:27)
             {
                 printf("r: %d\n", r);
-                for (c = 0 + d; (c < d + 3) && (c < 28); c++)
+                for (c = 0 + d;                    // initial state
+                     (c < d + 3) && (c < 28); c++) // index by y direction in one vmm page[(0, 1, 2):[3, 3, 3]:(25, 26, 27)]
                 {
                     /*collect image data into input array*/
                     // printf("%d,%d ", r, c);
@@ -393,8 +400,8 @@ float **inputs_mapping(MnistImage *image, MatSize input_size, int *VMM_turns, in
     /*debug*/
     printf("\ncount_x: %d\n", count_x);
     printf("\ncount_y: %d\n", count_y);
-
-    printf("length: %d\n", size_xx);
+    printf("input size: %d\n", temp_input_size.columns);
+    printf("base_index_x: %d\n", base_index_x);
 
     float **VMM_input_array;
     VMM_input_array = malloc(sizeof(float *) * count_y);

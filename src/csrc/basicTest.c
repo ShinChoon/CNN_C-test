@@ -18,6 +18,7 @@ int main()
     MatSize input_size; //
     input_size.columns = test_images->image_point[0].number_of_columns;
     input_size.rows = test_images->image_point[0].number_of_rows;
+
     printf("[+] Input size: {%d,%d}\n", input_size.columns, input_size.rows);
 
     // Output Label array size {label_length} {10}
@@ -37,16 +38,16 @@ int main()
     /*load weights from csv file*/
     _ImportCnn(cnn, cnn_arch_filename);
 
-    /*save data as image*/
-    char *filename = (char *)malloc(sizeof(char) * 13);
+    // /*save data as image*/
+    // char *filename = (char *)malloc(sizeof(char) * 13);
 
-    /*map weigths and iamge as in IMC shape*/
-    int VMM_turns = 0;
-    int weights_number = 0;
-    int bias_number = 0;
-    float **input_data_array = inputs_mapping(&(test_images->image_point[0]), input_size, &VMM_turns, cnn->C1->input_channels, cnn->C1->output_channels);
-    float **weight_array = weights_mapping(cnn, &weights_number);
-    float *bias_array = bias_mapping(cnn, &bias_number);
+    // /*map weigths and iamge as in IMC shape*/
+    // int VMM_turns = 0;
+    // int weights_number = 0;
+    // int bias_number = 0;
+    // float **input_data_array = inputs_mapping(&(test_images->image_point[0]), input_size, &VMM_turns, cnn->C1->input_channels, cnn->C1->output_channels);
+    // float **weight_array = weights_mapping(cnn, &weights_number);
+    // float *bias_array = bias_mapping(cnn, &bias_number);
 
     // /*initalize VMM and use MAC operation*/
     // VMM *vmm = initializeVMM(cnn);
@@ -97,24 +98,35 @@ void _CnnSetup(Cnn *cnn, MatSize input_size, int output_size)
     temp_input_size.columns = input_size.columns;
     temp_input_size.rows = input_size.rows;
 
+    printf("temp_input_size col: %d\n", temp_input_size.columns);
+    printf("temp_input_size rows: %d\n", temp_input_size.rows);
+
     cnn->C1 = InitialCovLayer(temp_input_size.columns,
                               temp_input_size.rows, map_size, 1, 4, VALID);
 
     // Layer2 Pooling input size: {28,28}
     temp_input_size.columns = temp_input_size.columns - map_size + 1;
     temp_input_size.rows = temp_input_size.rows - map_size + 1;
+    printf("temp_input_size col: %d\n", temp_input_size.columns);
+    printf("temp_input_size rows: %d\n", temp_input_size.rows);
+
     cnn->S2 = InitialPoolingLayer(temp_input_size.columns,
                                   temp_input_size.rows, pool_scale, 4, 4, MAX_POOLING);
 
     // Layer3 Cov input size: {14,14}
     temp_input_size.columns = temp_input_size.columns / 2;
     temp_input_size.rows = temp_input_size.rows / 2;
+    printf("temp_input_size col: %d\n", temp_input_size.columns);
+    printf("temp_input_size rows: %d\n", temp_input_size.rows);
+
     cnn->C3 = InitialCovLayer(temp_input_size.columns,
                               temp_input_size.rows, map_size, 4, 8, VALID);
 
     // Layer4 Pooling with average. Input size: {12,12}
     temp_input_size.columns = temp_input_size.columns - map_size + 1;
     temp_input_size.rows = temp_input_size.rows - map_size + 1;
+    printf("temp_input_size col: %d\n", temp_input_size.columns);
+    printf("temp_input_size rows: %d\n", temp_input_size.rows);
     cnn->S4 = InitialPoolingLayer(temp_input_size.columns,
                                   temp_input_size.rows, pool_scale, 8, 8, MAX_POOLING);
 
@@ -155,8 +167,69 @@ void _CnnFF(Cnn *cnn, float **input_data)
     }
 }
 
+// // Read one image from data <filename>
+// ImageArray _ReadImages(const char *filename)
+// /*try to add padding from 28x28 to 30x30*/
+// {
+//     // Open images file
+//     FILE *file_point = NULL;
+//     file_point = fopen(filename, "rb");
+
+//     // Read images from file with file_point
+//     int magic_number = 0;     // magic number
+//     int number_of_images = 0; // Images' number
+//     int n_rows = 0;           // number of rows of an image<image hight>
+//     int n_columns = 0;        // number of cols of an image<image width>
+
+//     // >Big-End Style, So Reverse the Integer. Read magic number
+//     fread((char *)&magic_number, sizeof(magic_number), 1, file_point);
+//     magic_number = ReverseInt(magic_number);
+
+//     // >Big-End. Read the number of images.
+//     fread((char *)&number_of_images, sizeof(number_of_images), 1, file_point);
+//     number_of_images = ReverseInt(number_of_images);
+
+//     // Read the rows and cols of an image
+//     fread((char *)&n_rows, sizeof(n_rows), 1, file_point);
+//     fread((char *)&n_columns, sizeof(n_columns), 1, file_point);
+//     n_rows = ReverseInt(n_rows);
+//     n_columns = ReverseInt(n_columns);
+
+//     // define strutrue of image array
+//     ImageArray image_array = (ImageArray)malloc(sizeof(ImageArray));
+//     image_array->number_of_images = number_of_images; // number of images
+//     // array of all images.
+//     image_array->image_point = (MnistImage *)malloc(number_of_images * sizeof(MnistImage));
+
+//     int row, column;                           // Temp for row and column
+//     for (int i = 0; i < number_of_images; ++i) // Images from 0 -> number_of_images-1
+//     {
+//         image_array->image_point[i].number_of_rows = n_rows;       //
+//         image_array->image_point[i].number_of_columns = n_columns; // set
+//         image_array->image_point[i].image_data = (float **)malloc(n_rows * sizeof(float *));
+
+//         for (row = 0; row < n_rows; ++row) // from 1 -> n_rows-1
+//         {
+//             image_array->image_point[i].image_data[row] = (float *)malloc(n_columns * sizeof(float)); // expanding to 30
+
+//             for (column = 0; column < n_columns; ++column) // from 0 -> n_columns-1
+//             {
+//                 unsigned char temp_pixel = 0;
+//                 // read a pixel 0-255 with 8-bit
+//                 fread((char *)&temp_pixel, sizeof(temp_pixel), 1, file_point);
+//                 // Change 8-bit pixel to float.
+//                 image_array->image_point[i].image_data[row][column] = (float)temp_pixel / 255;
+//             }
+//         }
+//     }
+
+//     fclose(file_point);
+//     return image_array;
+// }
+
 // Read one image from data <filename>
 ImageArray _ReadImages(const char *filename)
+/*try to add padding from 28x28 to 30x30*/
 {
     // Open images file
     FILE *file_point = NULL;
@@ -191,14 +264,21 @@ ImageArray _ReadImages(const char *filename)
     int row, column;                           // Temp for row and column
     for (int i = 0; i < number_of_images; ++i) // Images from 0 -> number_of_images-1
     {
-        image_array->image_point[i].number_of_rows = n_rows;       //
-        image_array->image_point[i].number_of_columns = n_columns; // set
-        image_array->image_point[i].image_data = (float **)malloc(n_rows * sizeof(float *));
+        image_array->image_point[i].number_of_rows = n_rows+2;       //
+        image_array->image_point[i].number_of_columns = n_columns+2; // set
+        image_array->image_point[i].image_data = (float **)malloc(n_rows+2 * sizeof(float *));
 
-        for (row = 0; row < n_rows; ++row) // from 0 -> n_rows-1
-        {
-            image_array->image_point[i].image_data[row] = (float *)malloc(n_columns * sizeof(float));
-            for (column = 0; column < n_columns; ++column) // from 0 -> n_columns-1
+        /* adding 1x30 zero padding in the begining*/
+        image_array->image_point[i].image_data[0] = (float *)malloc(n_columns+2  * sizeof(float));
+
+        for (row = 1; row < n_rows+1; ++row) // from 1 -> n_rows-1
+        {   
+            image_array->image_point[i].image_data[row] = (float *)malloc(n_columns+2 * sizeof(float));//expanding to 30
+            /*adding zero padding in the begining*/
+            unsigned char zero_pixel = 0;
+            image_array->image_point[i].image_data[row][0] = (float)zero_pixel/255;
+
+            for (column = 1; column < n_columns+1; ++column) // from 0 -> n_columns-1
             {
                 unsigned char temp_pixel = 0;
                 // read a pixel 0-255 with 8-bit
@@ -206,7 +286,11 @@ ImageArray _ReadImages(const char *filename)
                 // Change 8-bit pixel to float.
                 image_array->image_point[i].image_data[row][column] = (float)temp_pixel / 255;
             }
+            /*adding zero padding in the end*/
+            image_array->image_point[i].image_data[row][n_columns+1] = (float)zero_pixel / 255;
         }
+        /*adding 1x30 zero padding in the end*/
+        image_array->image_point[i].image_data[n_rows+1] = (float *)malloc(n_columns+2 * sizeof(float));
     }
 
     fclose(file_point);
@@ -469,7 +553,7 @@ void _ImportCnn(Cnn *cnn, const char *filename)
 
     /*Loading C1 weights and bias, C1 has been initialized in _Convsetup*/
     load_weights(file_point, cnn->C1);
-    load_bias(file_point, cnn->C1);
+    // load_bias(file_point, cnn->C1);
 
     fclose(file_point);
 }
@@ -490,12 +574,12 @@ void load_weights(FILE *file_point, CovLayer *cc)
                 {
                     int h = c + 1;
                     char *tmp = strdup(line);
-                    char *value = getfield(tmp, h);
-                    if (value != NULL)
-                    {
-                        float number = strtod(value, NULL);
-                        cc->map_data[i][j][r][c] = number;
-                    }
+                    // char *value = getfield(tmp, h);
+                    // if (value != NULL)
+                    // {
+                    //     float number = strtod(value, NULL);
+                    //     cc->map_data[i][j][r][c] = number;
+                    // }
                     free(tmp);
                 }
             }

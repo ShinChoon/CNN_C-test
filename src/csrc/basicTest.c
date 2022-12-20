@@ -337,64 +337,71 @@ float **inputs_mapping(MnistImage *image, MatSize input_size, int *VMM_turns, in
     num_inchan = 1;
     int base_index_x = IMCcol / (num_inchan * num_outchan) + 1;
     int base_index_y = IMCcol;
+    temp_input_size.columns = 30;
+    temp_input_size.rows = 30;
+    columns_number = temp_input_size.rows;
 
-    for (int d = 0; d < 32; d++) // base number for index in y direction(0:31)
+    for (int d = 0; d < temp_input_size.rows-3+1; d++) // base number for index in y direction(0:31)
     {
-        for (int i = 0; i < 10; i++) // base number for index in x direction from 0 to 9 in one page (0:1:9)
+        for (int i = 0; i < base_index_x+1; i++) // base number for index in x direction from 0 to 9 in one page (0:1:9)
         {
-            for (r = 0 + i * 3;                    // initial state
-                 (r < 3 + i * 3) && (r < 28); r++) // index by x direction in one VMM page (0:1:11):(8,8,8):(16:1:27)
+            for (r = 0 + i * 3 * num_inchan;                                                      // initial state
+                 (r < 3 * num_inchan + i * 3 * num_inchan) && (r < temp_input_size.columns);r++) // index by x direction in one VMM page (0:1:11):(8,8,8):(16:1:27)
             {
-                printf("r: %d\n", r);
-                for (c = 0 + d;                    // initial state
-                     (c < d + 3) && (c < 28); c++) // index by y direction in one vmm page[(0, 1, 2):[3, 3, 3]:(25, 26, 27)]
+                for (c = 0 + d;                                         // initial state
+                     (c < d + 3) && (c < temp_input_size.rows); c++) // index by y direction in one vmm page[(0, 1, 2):[3, 3, 3]:(25, 26, 27)]
                 {
                     /*collect image data into input array*/
-                    // printf("%d,%d ", r, c);
-                    VMM_input[count_x] = image->image_data[r][c];
+                    printf("%d,%d ", r, c);
+                    // VMM_input[count_x] = image->image_data[r][c];
                     count_x++;
-                    index_VMM_input++;
-                    if (index_VMM_input > 36)
+                    // printf("index_VMM_input: %d\n", index_VMM_input);
+                    index_VMM_input = index_VMM_input + num_inchan;
+                    // printf("index_VMM_input: %d\n", index_VMM_input);
+
+                    if (index_VMM_input > IMCrow)
                     {
                         index_VMM_input = 1;
                         if (r < columns_number - 1)
                         {
-                            r -= 4;
-                            // printf("\n");
+                            r -= 4/num_inchan;
+                            printf("@@\n");
                             count_x = 0;
-                            for (int h = 0; h < size_xx; h++)
-                                _local_VMM_input_lists[count_y][h] = VMM_input[h];
+                            // for (int h = 0; h < size_xx; h++)
+                                // _local_VMM_input_lists[count_y][h] = VMM_input[h];
                             count_y++;
                         }
                         else
                         {
                             /*once it moved to the end, new VMM created with only 4 rows mapped*/
                             // printf("!!!\n");
+                            printf("@@@@@@\n");
                             count_x = 0;
                             /*store the current input array into list*/
-                            for (int h = 0; h < size_xx; h++)
-                                _local_VMM_input_lists[count_y][h] = VMM_input[h];
+                            // for (int h = 0; h < size_xx; h++)
+                                // _local_VMM_input_lists[count_y][h] = VMM_input[h];
 
                             float temp_input[size_xx];
                             /*duplicate four lines from previous line*/
-                            for (int h = 0; h < size_xx; h++)
-                                if ((h < 4))
-                                    temp_input[h] = VMM_input[size_xx + h - 4];
-                                else
-                                    temp_input[h] = 0;
+                            // for (int h = 0; h < size_xx; h++)
+                            //     if ((h < 4))
+                            //         temp_input[h] = VMM_input[size_xx + h - 4];
+                            //     else
+                            //         temp_input[h] = 0;
 
                             /*store the new input array into list*/
                             count_y++;
-                            for (int h = 0; h < size_xx; h++)
-                                _local_VMM_input_lists[count_y][h] = temp_input[h];
+                            // for (int h = 0; h < size_xx; h++)
+                                // _local_VMM_input_lists[count_y][h] = temp_input[h];
                             /*go to next line*/
                             count_y++;
                         }
                     }
                 }
+            printf("\n");
             }
         }
-        if ((r >= 27) && (c >= 28))
+        if ((r >= temp_input_size.columns) && (c >= temp_input_size.columns))
             break;
     }
     /*debug*/
@@ -404,13 +411,13 @@ float **inputs_mapping(MnistImage *image, MatSize input_size, int *VMM_turns, in
     printf("base_index_x: %d\n", base_index_x);
 
     float **VMM_input_array;
-    VMM_input_array = malloc(sizeof(float *) * count_y);
-    for (int i = 0; i < count_y; i++)
-    {
-        VMM_input_array[i] = malloc(sizeof(float *) * IMCrow);
-        for (int h = 0; h < IMCrow; h++)
-            VMM_input_array[i][h] = _local_VMM_input_lists[i][h];
-    }
+    // VMM_input_array = malloc(sizeof(float *) * count_y);
+    // for (int i = 0; i < count_y; i++)
+    // {
+    //     VMM_input_array[i] = malloc(sizeof(float *) * IMCrow);
+    //     for (int h = 0; h < IMCrow; h++)
+    //         VMM_input_array[i][h] = _local_VMM_input_lists[i][h];
+    // }
 
     // /*create file for test*/
     // FILE *fpt;
@@ -426,7 +433,7 @@ float **inputs_mapping(MnistImage *image, MatSize input_size, int *VMM_turns, in
 
     // fclose(fpt);
 
-    *VMM_turns = count_y;
+    // *VMM_turns = count_y;
 
     // for(int i=0; i<count_y; i++)
     // {

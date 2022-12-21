@@ -10,12 +10,12 @@ int main()
 {
     const char *cnn_arch_filename = "output/param_decoded.csv";
     // Read train and test data.
-    // LabelArray test_labels = ReadLabels("mnist/t10k-labels-idx1-ubyte");//???
+    LabelArray test_labels = ReadLabels("mnist/t10k-labels-idx1-ubyte");//???
     ImageArray test_images = _ReadImages("mnist/t10k-images-idx3-ubyte"); //???
     printf("[+] Read data finished!\n");
 
-    // Input image mat size {columns,rows}{28,28}
-    MatSize input_size; //
+    // Input image mat size {columns,rows}
+    MatSize input_size;
     input_size.columns = test_images->image_point[0].number_of_columns;
     input_size.rows = test_images->image_point[0].number_of_rows;
 
@@ -28,6 +28,7 @@ int main()
 
     // Setup CNN
     Cnn *cnn = (Cnn *)malloc(sizeof(Cnn)); //???
+
     _CnnSetup(cnn, input_size, output_size);
     printf("[+] CNN setup finished!\n");
 
@@ -38,35 +39,47 @@ int main()
     /*load weights from csv file*/
     _ImportCnn(cnn, cnn_arch_filename);
 
+
+    /*map weigths and iamge as in IMC shape*/
+    int VMM_turns = 0;
+    int weights_number = 0;
+    int bias_number = 0;
+    float **input_data_array = inputs_mapping(cnn->C1, & (test_images->image_point[0]),
+                                              &VMM_turns);
+    float **weight_array = weights_mapping(cnn->C1, &weights_number);
+    float *bias_array = bias_mapping(cnn->C1, &bias_number);
+
+    /*initalize VMM and use MAC operation*/
+    VMM *vmm = initializeVMM(cnn);
+    float **output_array = vmm->MACoperation(input_data_array, weight_array, VMM_turns);
+
+    Conv_image(cnn, output_array, VMM_turns, weights_number);
+
+    /*after convolution result from ADC*/
+    _CnnFF(cnn, test_images->image_point[0].image_data);
+
+    /*2nd convolution*/
+    int map_size = 3;
+    MatSize input_2nd_size;
+    input_2nd_size.columns = (input_size.columns-map_size+1)/2;
+    input_2nd_size.rows = (input_size.rows-map_size+1)/2;
+
+    MnistImage outputS2[cnn->S2->output_channels];
+    for(int i=0; i<sizeof(outputS2); i++)
+    {
+        outputS2[i].image_data = cnn->S2->y[i];
+        outputS2[i].number_of_columns = input_2nd_size.columns;
+        outputS2[i].number_of_rows = input_2nd_size.rows;
+    }
+
+    // float **input2_data_array = inputs_mapping(cnn->C3, &(test_images->image_point[0]),
+    //   &VMM_turns);
+    // float **weight2_array = weights_mapping(cnn->C3, &weights_number);
+    // float *bias2_array = bias_mapping(cnn->C3, &bias_number);
+    // input_data_array
+    // /*debug: create pgm files, later use convert in terminal to create png*/
     // /*save data as image*/
     // char *filename = (char *)malloc(sizeof(char) * 13);
-
-    // /*map weigths and iamge as in IMC shape*/
-    // int VMM_turns = 0;
-    // int weights_number = 0;
-    // int bias_number = 0;
-    // float **input_data_array = inputs_mapping(&(test_images->image_point[0]), input_size, &VMM_turns, cnn->C1->input_channels, cnn->C1->output_channels);
-    // float **weight_array = weights_mapping(cnn, &weights_number);
-    // float *bias_array = bias_mapping(cnn, &bias_number);
-
-    // /*initalize VMM and use MAC operation*/
-    // VMM *vmm = initializeVMM(cnn);
-    // float **output_array = vmm->MACoperation(input_data_array, weight_array, VMM_turns);
-
-    // Conv_image(cnn, output_array, VMM_turns, weights_number);
-
-    // /*after convolution result from ADC*/
-    // _CnnFF(cnn, test_images->image_point[0].image_data);
-
-    // /*2nd convolution*/
-    // int map_size = 3;
-    // MatSize input_2nd_size;
-    // input_2nd_size.columns = (input_size.columns-map_size+1)/2;
-    // input_2nd_size.rows = (input_size.rows-map_size+1)/2;
-
-    // input_data_array
-
-    /*debug: create pgm files, later use convert in terminal to create png*/
     // sprintf(filename, "image_%d.pgm", 1);
     // save_image(cnn->C1->input_height,
     //         test_images->image_point[0].image_data,
@@ -76,14 +89,13 @@ int main()
     //     sprintf(filename, "conv_%d.pgm", i);
     //     save_image(cnn->S2->input_height, cnn->C1->v[i], filename);
     // }
-
     // for(int i=0;i<cnn->S2->output_channels; i++)
     // {
     //     sprintf(filename, "pool_%d.pgm", i);
     //     save_image(cnn->S2->input_height/2, cnn->S2->y[i], filename);
     // }
 
-    return 0;
+        return 0;
 }
 
 void _CnnSetup(Cnn *cnn, MatSize input_size, int output_size)
@@ -167,66 +179,6 @@ void _CnnFF(Cnn *cnn, float **input_data)
     }
 }
 
-// // Read one image from data <filename>
-// ImageArray _ReadImages(const char *filename)
-// /*try to add padding from 28x28 to 30x30*/
-// {
-//     // Open images file
-//     FILE *file_point = NULL;
-//     file_point = fopen(filename, "rb");
-
-//     // Read images from file with file_point
-//     int magic_number = 0;     // magic number
-//     int number_of_images = 0; // Images' number
-//     int n_rows = 0;           // number of rows of an image<image hight>
-//     int n_columns = 0;        // number of cols of an image<image width>
-
-//     // >Big-End Style, So Reverse the Integer. Read magic number
-//     fread((char *)&magic_number, sizeof(magic_number), 1, file_point);
-//     magic_number = ReverseInt(magic_number);
-
-//     // >Big-End. Read the number of images.
-//     fread((char *)&number_of_images, sizeof(number_of_images), 1, file_point);
-//     number_of_images = ReverseInt(number_of_images);
-
-//     // Read the rows and cols of an image
-//     fread((char *)&n_rows, sizeof(n_rows), 1, file_point);
-//     fread((char *)&n_columns, sizeof(n_columns), 1, file_point);
-//     n_rows = ReverseInt(n_rows);
-//     n_columns = ReverseInt(n_columns);
-
-//     // define strutrue of image array
-//     ImageArray image_array = (ImageArray)malloc(sizeof(ImageArray));
-//     image_array->number_of_images = number_of_images; // number of images
-//     // array of all images.
-//     image_array->image_point = (MnistImage *)malloc(number_of_images * sizeof(MnistImage));
-
-//     int row, column;                           // Temp for row and column
-//     for (int i = 0; i < number_of_images; ++i) // Images from 0 -> number_of_images-1
-//     {
-//         image_array->image_point[i].number_of_rows = n_rows;       //
-//         image_array->image_point[i].number_of_columns = n_columns; // set
-//         image_array->image_point[i].image_data = (float **)malloc(n_rows * sizeof(float *));
-
-//         for (row = 0; row < n_rows; ++row) // from 1 -> n_rows-1
-//         {
-//             image_array->image_point[i].image_data[row] = (float *)malloc(n_columns * sizeof(float)); // expanding to 30
-
-//             for (column = 0; column < n_columns; ++column) // from 0 -> n_columns-1
-//             {
-//                 unsigned char temp_pixel = 0;
-//                 // read a pixel 0-255 with 8-bit
-//                 fread((char *)&temp_pixel, sizeof(temp_pixel), 1, file_point);
-//                 // Change 8-bit pixel to float.
-//                 image_array->image_point[i].image_data[row][column] = (float)temp_pixel / 255;
-//             }
-//         }
-//     }
-
-//     fclose(file_point);
-//     return image_array;
-// }
-
 // Read one image from data <filename>
 ImageArray _ReadImages(const char *filename)
 /*try to add padding from 28x28 to 30x30*/
@@ -266,19 +218,41 @@ ImageArray _ReadImages(const char *filename)
     {
         image_array->image_point[i].number_of_rows = n_rows+2;       //
         image_array->image_point[i].number_of_columns = n_columns+2; // set
-        image_array->image_point[i].image_data = (float **)malloc(n_rows+2 * sizeof(float *));
+        image_array->image_point[i].image_data = (float **)malloc((n_rows+2) * sizeof(float *));
 
-        /* adding 1x30 zero padding in the begining*/
-        image_array->image_point[i].image_data[0] = (float *)malloc(n_columns+2  * sizeof(float));
 
-        for (row = 1; row < n_rows+1; ++row) // from 1 -> n_rows-1
-        {   
-            image_array->image_point[i].image_data[row] = (float *)malloc(n_columns+2 * sizeof(float));//expanding to 30
-            /*adding zero padding in the begining*/
+        /* adding 1x30 zero padding in the begining 0th row*/
+        /*first row*/
+        image_array->image_point[i].image_data[0] = (float *)malloc((n_columns + 2) * sizeof(float));
+
+        for (column = 0; column < n_columns+2; ++column) // from 0 -> n_columns
+        {
             unsigned char zero_pixel = 0;
-            image_array->image_point[i].image_data[row][0] = (float)zero_pixel/255;
+            // Change 8-bit pixel to float.
+            image_array->image_point[i].image_data[0][column] = (float)zero_pixel / 255;
+        }
 
-            for (column = 1; column < n_columns+1; ++column) // from 0 -> n_columns-1
+        /* adding 1x30 zero padding in the end row*/
+        /*end row*/
+        image_array->image_point[i].image_data[n_columns+1] = (float *)malloc((n_columns + 2) * sizeof(float));
+
+        for (column = 0; column < n_columns + 2; ++column) // from 0 -> n_columns
+        {
+            unsigned char zero_pixel = 0;
+            // Change 8-bit pixel to float.
+            image_array->image_point[i].image_data[n_columns+1][column] = (float)zero_pixel / 255;
+        }
+
+        /*from 1st -> Nth rows*/
+        for (row = 1; row < n_rows + 1; ++row) 
+        {
+            image_array->image_point[i].image_data[row] = (float *)malloc((n_columns + 2) * sizeof(float)); // expanding to 30
+            
+            /*adding zero padding in the begining col 0*/
+            unsigned char zero_pixel = 0;
+            image_array->image_point[i].image_data[row][0] = (float)zero_pixel / 255;
+
+            for (column = 1; column < n_columns + 1; ++column) // from 0 -> n_columns
             {
                 unsigned char temp_pixel = 0;
                 // read a pixel 0-255 with 8-bit
@@ -286,37 +260,40 @@ ImageArray _ReadImages(const char *filename)
                 // Change 8-bit pixel to float.
                 image_array->image_point[i].image_data[row][column] = (float)temp_pixel / 255;
             }
-            /*adding zero padding in the end*/
-            image_array->image_point[i].image_data[row][n_columns+1] = (float)zero_pixel / 255;
+            
+            /*adding zero padding in the end col+1*/
+            image_array->image_point[i].image_data[row][n_columns + 1] = (float)zero_pixel / 255;
         }
-        /*adding 1x30 zero padding in the end*/
-        image_array->image_point[i].image_data[n_rows+1] = (float *)malloc(n_columns+2 * sizeof(float));
+
     }
 
     fclose(file_point);
     return image_array;
 }
 
-float* bias_mapping(Cnn* cnn, int *bias_number)
+float *bias_mapping(CovLayer *cc, int *bias_number)
 {
     printf("below is bias map\n");
     float *VMM_bias_map;
     VMM_bias_map = malloc(sizeof(float)*IMCcol);
-    for (int r = 0; r < IMCcol / cnn->C1->output_channels; r++)
-        for (int i = 0; i < cnn->C1->output_channels; i++)
-            VMM_bias_map[r * 4 + i] = cnn->C1->basic_data[i];
+    for (int r = 0; r < IMCcol / cc->output_channels; r++)
+        for (int i = 0; i < cc->output_channels; i++)
+        {
+            VMM_bias_map[r * 4 + i] = cc->basic_data[i];
+        }
 
-    // /*debug*/
-    // for (int i = 0; i < IMCcol;i++)
-    // {
-    //     printf("%.2f ", VMM_bias_map[i]);
-    //     printf("\n");
-    // }
+        // /*debug*/
+        // printf("bias@@@@\n");
+        // for (int i = 0; i < IMCcol;i++)
+        // {
+        //     printf("%.2f ", VMM_bias_map[i]);
+        //     printf("\n");
+        // }
 
-    return VMM_bias_map;
+        return VMM_bias_map;
 }
 
-float **weights_mapping(Cnn *cnn, int *weights_number)
+float **weights_mapping(CovLayer *cc, int *weights_number)
 {
 
     printf("below is weights map\n");
@@ -331,23 +308,23 @@ float **weights_mapping(Cnn *cnn, int *weights_number)
     int drift_x = 0;
     int drift_y = 0;
     /*weights map for columns by output channels*/
-    for (int j = 0; j < (cnn->C1->input_channels); j++)
-        for (int i = 0; i < (cnn->C1->output_channels); i++)
+    for (int j = 0; j < (cc->input_channels); j++)
+        for (int i = 0; i < (cc->output_channels); i++)
         {
             for (int x = 0; x < 3; x++)
             {
                 for (int y = 0; y < 3; y++)
                 {
-                    map_array[j][i][k2] = cnn->C1->map_data[j][i][x][y];
+                    map_array[j][i][k2] = cc->map_data[j][i][x][y];
                     k2++;
                 }
             }
             k2 = 0;
         }
     /*for mapping through the IMC matrix*/
-    for (int r = 0; r < IMCcol / cnn->C1->output_channels; r++)
+    for (int r = 0; r < IMCcol / cc->output_channels; r++)
     {
-        for (int h = 0; h < cnn->C1->output_channels; h++)
+        for (int h = 0; h < cc->output_channels; h++)
         {
             for (int i = 0; i < 9; i++)
             {
@@ -379,30 +356,31 @@ float **weights_mapping(Cnn *cnn, int *weights_number)
     // fclose(fpt);
 
     /*debug*/
-    // for (int i = 0; i < IMCcol;i++)
-    // {
-    //     for (int h = 0; h < IMCrow; h++)
-    //     printf("%.2f ", VMM_weights_map[i][h]);
-    //     if(((i+1)%4==0)&& (i > 1))
-    //     {
-    //         printf("!!\n");
-    //     }
-    //     printf("\n");
+    printf("weights@@@ \n");
+    for (int i = 0; i < IMCcol;i++)
+    {
+        for (int h = 0; h < IMCrow; h++)
+        printf("%.2f ", VMM_weights_map[i][h]);
+        if(((i+1)%4==0)&& (i > 1))
+        {
+            printf("!!\n");
+        }
+        printf("\n");
 
-    // }
+    }
 
     return VMM_weights_map;
 }
 
-float **inputs_mapping(MnistImage *image, MatSize input_size, int *VMM_turns, int num_inchan, int num_outchan)
+float **inputs_mapping(CovLayer *cc, MnistImage *image, int *VMM_turns)
 /*Create 9x1 lines of image data and concatenate lines into 2D array*/
 /*
     return: 3D array with image elements locations in 3x3 metrix
 */
 {
     MatSize temp_input_size;
-    temp_input_size.columns = input_size.columns;
-    temp_input_size.rows = input_size.rows;
+    temp_input_size.columns = cc->input_height;
+    temp_input_size.rows = cc->input_width;
 
     printf("below is image map\n");
 
@@ -418,29 +396,30 @@ float **inputs_mapping(MnistImage *image, MatSize input_size, int *VMM_turns, in
     int r = 0;
     int c = 0;
 
-    num_inchan = 1;
-    int base_index_x = IMCcol / (num_inchan * num_outchan) + 1;
+    // cc->input_channels = 2;
+    // cc->output_channels = 8;
+    // temp_input_size.columns = 14;
+    // temp_input_size.rows = 14;
+    int base_index_x = IMCcol / (cc->input_channels * cc->output_channels) + 1;
     int base_index_y = IMCcol;
-    temp_input_size.columns = 30;
-    temp_input_size.rows = 30;
     columns_number = temp_input_size.rows;
 
     for (int d = 0; d < temp_input_size.rows-3+1; d++) // base number for index in y direction(0:31)
     {
         for (int i = 0; i < base_index_x+1; i++) // base number for index in x direction from 0 to 9 in one page (0:1:9)
         {
-            for (r = 0 + i * 3 * num_inchan;                                                      // initial state
-                 (r < 3 * num_inchan + i * 3 * num_inchan) && (r < temp_input_size.columns);r++) // index by x direction in one VMM page (0:1:11):(8,8,8):(16:1:27)
+            for (r = 0 + i * 3 * cc->input_channels;                                                              // initial state
+                 (r < 3 * cc->input_channels + i * 3 * cc->input_channels) && (r < temp_input_size.columns); r++) // index by x direction in one VMM page (0:1:11):(8,8,8):(16:1:27)
             {
                 for (c = 0 + d;                                         // initial state
                      (c < d + 3) && (c < temp_input_size.rows); c++) // index by y direction in one vmm page[(0, 1, 2):[3, 3, 3]:(25, 26, 27)]
                 {
                     /*collect image data into input array*/
-                    printf("%d,%d ", r, c);
-                    // VMM_input[count_x] = image->image_data[r][c];
+                    // printf("%d,%d ", r, c);
+                    VMM_input[count_x] = image->image_data[r][c];
                     count_x++;
                     // printf("index_VMM_input: %d\n", index_VMM_input);
-                    index_VMM_input = index_VMM_input + num_inchan;
+                    index_VMM_input = index_VMM_input + cc->input_channels;
                     // printf("index_VMM_input: %d\n", index_VMM_input);
 
                     if (index_VMM_input > IMCrow)
@@ -448,41 +427,40 @@ float **inputs_mapping(MnistImage *image, MatSize input_size, int *VMM_turns, in
                         index_VMM_input = 1;
                         if (r < columns_number - 1)
                         {
-                            r -= 4/num_inchan;
-                            printf("@@\n");
+                            r -= 4 / cc->input_channels;
+                            // printf("@@\n");
                             count_x = 0;
-                            // for (int h = 0; h < size_xx; h++)
-                                // _local_VMM_input_lists[count_y][h] = VMM_input[h];
+                            for (int h = 0; h < size_xx; h++)
+                                _local_VMM_input_lists[count_y][h] = VMM_input[h];
                             count_y++;
                         }
                         else
                         {
                             /*once it moved to the end, new VMM created with only 4 rows mapped*/
                             // printf("!!!\n");
-                            printf("@@@@@@\n");
+                            // printf("@@@@@@\n");
                             count_x = 0;
                             /*store the current input array into list*/
-                            // for (int h = 0; h < size_xx; h++)
-                                // _local_VMM_input_lists[count_y][h] = VMM_input[h];
+                            for (int h = 0; h < size_xx; h++)
+                                _local_VMM_input_lists[count_y][h] = VMM_input[h];
 
                             float temp_input[size_xx];
                             /*duplicate four lines from previous line*/
-                            // for (int h = 0; h < size_xx; h++)
-                            //     if ((h < 4))
-                            //         temp_input[h] = VMM_input[size_xx + h - 4];
-                            //     else
-                            //         temp_input[h] = 0;
+                            for (int h = 0; h < size_xx; h++)
+                                if ((h < 4))
+                                    temp_input[h] = VMM_input[size_xx + h - 4];
+                                else
+                                    temp_input[h] = 0;
 
                             /*store the new input array into list*/
                             count_y++;
-                            // for (int h = 0; h < size_xx; h++)
-                                // _local_VMM_input_lists[count_y][h] = temp_input[h];
+                            for (int h = 0; h < size_xx; h++)
+                                _local_VMM_input_lists[count_y][h] = temp_input[h];
                             /*go to next line*/
                             count_y++;
                         }
                     }
                 }
-            printf("\n");
             }
         }
         if ((r >= temp_input_size.columns) && (c >= temp_input_size.columns))
@@ -494,14 +472,19 @@ float **inputs_mapping(MnistImage *image, MatSize input_size, int *VMM_turns, in
     printf("input size: %d\n", temp_input_size.columns);
     printf("base_index_x: %d\n", base_index_x);
 
+    printf("input channel: %d\n", cc->input_channels);
+    printf("output channel: %d\n", cc->output_channels);
+
     float **VMM_input_array;
-    // VMM_input_array = malloc(sizeof(float *) * count_y);
-    // for (int i = 0; i < count_y; i++)
-    // {
-    //     VMM_input_array[i] = malloc(sizeof(float *) * IMCrow);
-    //     for (int h = 0; h < IMCrow; h++)
-    //         VMM_input_array[i][h] = _local_VMM_input_lists[i][h];
-    // }
+    VMM_input_array = malloc(sizeof(float *) * count_y);
+    for (int i = 0; i < count_y; i++)
+    {
+        VMM_input_array[i] = malloc(sizeof(float *) * IMCrow);
+        for (int h = 0; h < IMCrow; h++)
+            VMM_input_array[i][h] = _local_VMM_input_lists[i][h];
+    }
+
+    *VMM_turns = count_y;
 
     // /*create file for test*/
     // FILE *fpt;
@@ -517,7 +500,6 @@ float **inputs_mapping(MnistImage *image, MatSize input_size, int *VMM_turns, in
 
     // fclose(fpt);
 
-    // *VMM_turns = count_y;
 
     // for(int i=0; i<count_y; i++)
     // {
@@ -553,7 +535,7 @@ void _ImportCnn(Cnn *cnn, const char *filename)
 
     /*Loading C1 weights and bias, C1 has been initialized in _Convsetup*/
     load_weights(file_point, cnn->C1);
-    // load_bias(file_point, cnn->C1);
+    load_bias(file_point, cnn->C1);
 
     fclose(file_point);
 }
@@ -574,12 +556,12 @@ void load_weights(FILE *file_point, CovLayer *cc)
                 {
                     int h = c + 1;
                     char *tmp = strdup(line);
-                    // char *value = getfield(tmp, h);
-                    // if (value != NULL)
-                    // {
-                    //     float number = strtod(value, NULL);
-                    //     cc->map_data[i][j][r][c] = number;
-                    // }
+                    char *value = getfield(tmp, h);
+                    if (value != NULL)
+                    {
+                        float number = strtod(value, NULL);
+                        cc->map_data[i][j][r][c] = number;
+                    }
                     free(tmp);
                 }
             }

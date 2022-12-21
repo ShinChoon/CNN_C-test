@@ -19,9 +19,11 @@ struct weight_map{
 
 
 VMM *initializeVMM(Cnn *cnn);
-float* bias_mapping(Cnn *cnn, int* bias_number);
-float** weights_mapping(Cnn *cnn, int* weights_number);
-float** inputs_mapping(MnistImage* inputdata, MatSize input_size, int* VMM_turns, int num_inchan, int num_outchan);
+
+float *bias_mapping(CovLayer *cc, int *bias_number);
+float **weights_mapping(CovLayer *cc, int *weights_number);
+float **inputs_mapping(CovLayer *cc, MnistImage *inputdata, int *VMM_turns);
+
 void _CnnFF(Cnn *cnn, float **input_data);
 void _CnnSetup(Cnn *cnn, MatSize input_size, int output_size);
 void _ImportCnn(Cnn *cnn, const char *filename);

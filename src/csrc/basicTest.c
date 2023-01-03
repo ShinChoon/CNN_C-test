@@ -39,45 +39,45 @@ int main()
     // /*load weights from csv file*/
     _ImportCnn(cnn, cnn_arch_filename);
 
+    /*map weigths and iamge as in IMC shape*/
+    int VMM_turns = 0;
+    int weights_number = 0;
+    int bias_number = 0;
+    MnistImage* input_list[] = {&(test_images->image_point[0])};
+    float ***input_data_array = inputs_mapping(cnn->C1, input_list,
+                                              &VMM_turns, 1);
+    float ***weight_array = weights_mapping(cnn->C1, &weights_number,1);
+    float *bias_array = bias_mapping(cnn->C1, &bias_number);
 
-    // /*map weigths and iamge as in IMC shape*/
-    // int VMM_turns = 0;
-    // int weights_number = 0;
-    // int bias_number = 0;
-    // MnistImage* input_list[] = {&(test_images->image_point[0])};
-    // float ***input_data_array = inputs_mapping(cnn->C1, input_list,
-    //                                           &VMM_turns, 1);
-    // float ***weight_array = weights_mapping(cnn->C1, &weights_number,1);
-    // float *bias_array = bias_mapping(cnn->C1, &bias_number);
+    // /*initalize VMM and use MAC operation*/
+    VMM *vmm = initializeVMM(cnn);
+    float ***output_array = vmm->MACoperation(input_data_array, weight_array, VMM_turns, 1);
 
-    // // /*initalize VMM and use MAC operation*/
-    // VMM *vmm = initializeVMM(cnn);
-    // float ***output_array = vmm->MACoperation(input_data_array, weight_array, VMM_turns, 1);
+    Conv_image(cnn->C1, cnn->S2, output_array, VMM_turns, weights_number, 1);
 
-    // Conv_image(cnn->C1, cnn->S2, output_array, VMM_turns, weights_number, 1);
+    /*after convolution result from ADC*/
+    _CnnFF(cnn->C1, cnn->S2, test_images->image_point[0].image_data);
 
-    // /*after convolution result from ADC*/
-    // _CnnFF(cnn->C1, cnn->S2, test_images->image_point[0].image_data);
-
-    // /*2nd convolution*/
-    // int map_size = 3;
-    // MatSize input_2nd_size;
-    // input_2nd_size.columns = (input_size.columns-map_size+1)/2;
-    // input_2nd_size.rows = (input_size.rows-map_size+1)/2;
+    /*2nd convolution*/
+    int map_size = 3;
+    MatSize input_2nd_size;
+    input_2nd_size.columns = (input_size.columns-map_size+1)/2;
+    input_2nd_size.rows = (input_size.rows-map_size+1)/2;
 
 
-    // MnistImage* outputS2[cnn->S2->output_channels];
-    // for (int i = 0; i < sizeof(cnn->S2->output_channels); i++)
-    // {
-    //     outputS2[i] = Output_image(input_2nd_size.columns,
-    //                             input_2nd_size.columns,
-    //                             cnn->S2->y[i]);
-    // }
+    MnistImage* outputS2[cnn->S2->output_channels];
+    for (int i = 0; i < sizeof(cnn->S2->output_channels); i++)
+    {
+        outputS2[i] = Output_image(input_2nd_size.columns,
+                                input_2nd_size.columns,
+                                cnn->S2->y[i]);
+    }
 
-    // float ***input2_data_array = inputs_mapping(cnn->C3, outputS2,
-    //                                         &VMM_turns, 2);
-    // float **weight2_array = weights_mapping(cnn->C3, &weights_number,2);
-    // float *bias2_array = bias_mapping(cnn->C3, &bias_number);
+    float ***input2_data_array = inputs_mapping(cnn->C3, outputS2,
+                                            &VMM_turns, 2);
+    float **weight2_array = weights_mapping(cnn->C3, &weights_number,2);
+    float *bias2_array = bias_mapping(cnn->C3, &bias_number);
+    
     // input_data_array
     // /*debug: create pgm files, later use convert in terminal to create png*/
     // /*save data as image*/
@@ -281,17 +281,26 @@ float *bias_mapping(CovLayer *cc, int *bias_number)
     for (int r = 0; r < IMCcol / cc->output_channels; r++)
         for (int i = 0; i < cc->output_channels; i++)
         {
-            VMM_bias_map[r * 4 + i] = cc->basic_data[i];
+            VMM_bias_map[r * cc->output_channels + i] = cc->basic_data[i];
         }
 
     /*debug*/
-    printf("bias@@@@\n");
-    for (int chan = 0; chan < cc->input_channels; chan++)
-        for (int i = 0; i < IMCcol;i++)
-        {
-            printf("%.2f ", VMM_bias_map[i]);
-        }
-        printf("\n");
+    // printf("bias@@@@\n");
+    // for (int chan = 0; chan < cc->input_channels; chan++)
+    // {
+    //     for (int i = 0; i < IMCcol;i++)
+    //     {
+    //         printf("%.5f ", VMM_bias_map[i]);
+    //     }
+    //     printf("\n");
+    // }
+
+    printf("debug bias@@@@@\n");
+    for(int chan=0; chan< cc->output_channels; chan++)
+    {
+        printf("%.5f", cc->basic_data[chan]);
+    }
+    printf("\n");
     return VMM_bias_map;
 }
 
@@ -335,6 +344,7 @@ float ***weights_mapping(CovLayer *cc, int *weights_number, int Scaling)
             }
             k2 = 0;
         }
+
     /*for mapping through the IMC matrix*/
     for (int r = 0; r < IMCcol / cc->output_channels; r++)
     {
@@ -383,7 +393,7 @@ float ***weights_mapping(CovLayer *cc, int *weights_number, int Scaling)
         for (int i = 0; i < IMCcol;i++)
         {
             for (int h = 0; h < IMCrow; h++)
-            printf("%.2f ", VMM_weights_map[sch][i][h]);
+            printf("%.5f ", VMM_weights_map[sch][i][h]);
             if (((i + 1) % output_channels == 0) && (i > 1))
             {
                 printf("!!\n");
@@ -572,6 +582,9 @@ void _ImportCnn(Cnn *cnn, const char *filename)
     load_weights(file_point, cnn->C1);
     load_bias(file_point, cnn->C1);
 
+    load_weights(file_point, cnn->C3);
+    load_bias(file_point, cnn->C3);
+
     fclose(file_point);
 }
 
@@ -601,30 +614,37 @@ void load_weights(FILE *file_point, CovLayer *cc)
                 }
             }
         }
-}
 
+}
 void load_bias(FILE *file_point, CovLayer *cc)
 {
     char line[1024];
-    for (int i = 0; i < cc->input_channels; i++)
+    int count_ = 0;
+    for (int i = 0; i < 1; i++)
     {
         do
         {
             fgets(line, 1024, file_point);
-        } while (strcmp(line, "\n") == 0 || strcmp(line, "\n\n") == 0);
-        for (int i = 0; i < cc->output_channels; i++)
-        {
-            int h = i + 1;
-            char *tmp = strdup(line);
-            char *value = getfield(tmp, h);
-            if (value != NULL)
+            for (int ch = 0; ch < cc->output_channels; ch++)
             {
-                float number = strtod(value, NULL);
-                cc->basic_data[i] = number;
+                int h = ch + 1;
+                char *tmp = strdup(line);
+                char *value = getfield(tmp, h);
+                if (value != NULL)
+                {
+                    float number = strtod(value, NULL);
+                    cc->basic_data[count_] = number;
+                    count_++;
+                }
+                free(tmp);
             }
-            free(tmp);
+        } while (strcmp(line, "\n") == 0 || strcmp(line, "\n\n") == 0);
+        if (count_ < cc->output_channels)
+        {
+            i--;
         }
     }
+
 }
 
 MnistImage *Output_image(int cols, int rows, float **imagedata)

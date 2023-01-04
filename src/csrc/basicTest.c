@@ -75,10 +75,9 @@ int main()
 
     float ***input2_data_array = inputs_mapping(cnn->C3, outputS2,
                                             &VMM_turns, 2);
-    float **weight2_array = weights_mapping(cnn->C3, &weights_number,2);
+    float ***weight2_array = weights_mapping(cnn->C3, &weights_number,2);
     float *bias2_array = bias_mapping(cnn->C3, &bias_number);
     
-    // input_data_array
     // /*debug: create pgm files, later use convert in terminal to create png*/
     // /*save data as image*/
     // char *filename = (char *)malloc(sizeof(char) * 13);
@@ -298,20 +297,26 @@ float *bias_mapping(CovLayer *cc, int *bias_number)
     printf("debug bias@@@@@\n");
     for(int chan=0; chan< cc->output_channels; chan++)
     {
-        printf("%.5f", cc->basic_data[chan]);
+        printf("%.5f ", cc->basic_data[chan]);
     }
     printf("\n");
     return VMM_bias_map;
 }
 
 float ***weights_mapping(CovLayer *cc, int *weights_number, int Scaling)
+/*
+    mapping weights into 32*36 matrix 
+    param cc: convLayer for current layer
+    param weights_number: pointer to numer counting weights pattern duplication
+    param Scaling: scaling number for reduce the weights pattern size
+*/
 {
 
     printf("below is weights map\n");
     printf("inputchannel: %d\n", cc->input_channels);
     printf("outputchannel: %d\n", cc->output_channels);
 
-    /*convert 2D map to 1D*/
+    /*convert 2D map to 1D, memory acclocate space*/
     float ***VMM_weights_map;
     VMM_weights_map = malloc(sizeof(float **) * Scaling);
 
@@ -324,15 +329,16 @@ float ***weights_mapping(CovLayer *cc, int *weights_number, int Scaling)
 
     int input_channels = cc->input_channels;
     int output_channels = cc->output_channels;
-    int map_num = cc->map_size *cc->map_size; 
+    int map_num = cc->map_size * cc->map_size; 
 
-    float map_array[input_channels][output_channels][map_num];
+    float map_array[output_channels][input_channels][map_num];
     int k2 = 0;
     int drift_x = 0;
     int drift_y = 0;
     /*weights map for columns by output channels*/
-    for (int j = 0; j < (cc->input_channels); j++)
-        for (int i = 0; i < (cc->output_channels); i++)
+    /*convert matrix from output*input*3*3 into output*input*9 */
+    for (int j = 0; j < output_channels; j++)
+        for (int i = 0; i < cc->input_channels; i++)
         {
             for (int x = 0; x < 3; x++)
             {
@@ -345,27 +351,47 @@ float ***weights_mapping(CovLayer *cc, int *weights_number, int Scaling)
             k2 = 0;
         }
 
-    /*for mapping through the IMC matrix*/
-    for (int r = 0; r < IMCcol / cc->output_channels; r++)
+    /*convert map array shape: cascade element from each input channel*/
+    float mid_map_array[output_channels][input_channels*map_num];
+
+    for (int j = 0; j < output_channels; j++)
     {
-        for (int h = 0; h < cc->output_channels; h++) // for each column
+        int row_index = 0;
+        for (int x = 0; x < 9; x++)
         {
-            for (int i = 0; i < 9; i++)
+            for (int i = 0; i < cc->input_channels; i++)
             {
-                for(int sch=0; sch<Scaling; sch++)
+                mid_map_array[j][row_index] = map_array[j][i][x];
+                row_index++;
+            }
+        }
+    }
+    
+    /*for mapping through the IMC matrix 32*36, with drift in x and y direction*/
+    for (int r = 0; r < IMCcol / output_channels; r++)
+    {
+        for (int h = 0; h < output_channels; h++) // for each column
+        {
+            int row_index = 0;
+
+            for (int i = 0; i < 9 * (input_channels / Scaling); i++)
+            {
+                for (int sch = 0; sch < Scaling; sch++)
                 {
-                    for(int in_c=0; in_c<cc->input_channels/Scaling; in_c++)
-                    {
-                        i = i + in_c;
-                        VMM_weights_map[sch][h + drift_x][i + drift_y] = map_array[in_c][h][i];
-                    }
+                    // for (int in_c = 0; in_c < cc->input_channels / Scaling; in_c++)
+                    // {
+                    //     i = i + in_c;
+                        VMM_weights_map[sch][h + drift_x][i + drift_y] = mid_map_array[h][row_index];
+                        row_index++;
+                    // }
                 }
             }
         }
-        drift_x += 1 * cc->output_channels;
-        drift_y += 3 * cc->input_channels/Scaling;
+        drift_x += 1 * output_channels;
+        drift_y += 3 * input_channels / Scaling;
     }
 
+    /*counting patten duplication times*/
     for (int i = 0; i < IMCcol; i++)
     {
         if (((i + 1) % output_channels == 0) && (i > 1))
@@ -390,17 +416,20 @@ float ***weights_mapping(CovLayer *cc, int *weights_number, int Scaling)
     printf("weights@@@ \n");
     for(int sch=0; sch<Scaling; sch++)
     {
-        for (int i = 0; i < IMCcol;i++)
+        for (int h = 0; h < IMCcol;h++)
         {
-            for (int h = 0; h < IMCrow; h++)
-            printf("%.5f ", VMM_weights_map[sch][i][h]);
-            if (((i + 1) % output_channels == 0) && (i > 1))
+            for (int i = 0; i < IMCrow; i++)
+            {
+                printf("%.2f ", VMM_weights_map[sch][h][i]);
+            }
+            if (((h + 1) % output_channels == 0) && (h > 1))
             {
                 printf("!!\n");
             }
-            printf("\n");
+            else
+                printf("\n");
         }
-        printf("\n");
+        printf("@@@@@\n");
     }
 
     return VMM_weights_map;
@@ -545,12 +574,15 @@ float **inputs_mapping(CovLayer *cc, MnistImage **images, int *VMM_turns, int sc
 
     // fclose(fpt);
 
-
-    // for(int i=0; i<count_y; i++)
+    // for (int d = 0; d < scaling; d++)
     // {
-    // for(int h=0; h<size_xx; h++)
-    //     printf("%f ",  _local_VMM_input_lists[i][h]);
-    // printf("\n");
+    //     for (int i = 0; i < count_y; i++)
+    //     {
+    //         for (int h = 0; h < IMCrow; h++)
+    //             printf("%f ", VMM_input_array[d][i][h]);
+    //         printf("@@@@\n");
+    //     }
+    //     printf("@@@@scalling\n");
     // }
 
     return VMM_input_array;
@@ -590,9 +622,11 @@ void _ImportCnn(Cnn *cnn, const char *filename)
 
 void load_weights(FILE *file_point, CovLayer *cc)
 {
+    printf("call@@@@\n");
     char line[1024];
-    for (int i = 0; i < cc->input_channels; i++)
-        for (int j = 0; j < cc->output_channels; j++)
+    int i = 0; // input_channel index
+    for (int i = 0; i < cc->output_channels; i++)
+        for (int j = 0; j < cc->input_channels; j++)
         {
             for (int r = 0; r < cc->map_size; r++)
             {
@@ -613,6 +647,7 @@ void load_weights(FILE *file_point, CovLayer *cc)
                     free(tmp);
                 }
             }
+
         }
 
 }

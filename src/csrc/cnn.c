@@ -75,11 +75,11 @@ CovLayer *InitialCovLayer(int input_width, int input_height, int map_size,
 	covL->is_full_connect = true; //
 	int i, j, c, r;
 	srand((unsigned)time(NULL));
-	covL->map_data = (float ****)malloc(input_channels * sizeof(float ***));
-	for (i = 0; i < input_channels; i++)
+	covL->map_data = (float ****)malloc(output_channels * sizeof(float ***));
+	for (i = 0; i < output_channels; i++)
 	{
-		covL->map_data[i] = (float ***)malloc(output_channels * sizeof(float **));
-		for (j = 0; j < output_channels; j++)
+		covL->map_data[i] = (float ***)malloc(input_channels * sizeof(float **));
+		for (j = 0; j < input_channels; j++)
 		{
 			covL->map_data[i][j] = (float **)malloc(map_size * sizeof(float *));
 			for (r = 0; r < map_size; r++)
@@ -93,11 +93,11 @@ CovLayer *InitialCovLayer(int input_width, int input_height, int map_size,
 			}
 		}
 	}
-	covL->dmap_data = (float ****)malloc(input_channels * sizeof(float ***));
-	for (i = 0; i < input_channels; i++)
+	covL->dmap_data = (float ****)malloc(output_channels * sizeof(float ***));
+	for (i = 0; i < output_channels; i++)
 	{
-		covL->dmap_data[i] = (float ***)malloc(output_channels * sizeof(float **));
-		for (j = 0; j < output_channels; j++)
+		covL->dmap_data[i] = (float ***)malloc(input_channels * sizeof(float **));
+		for (j = 0; j < input_channels; j++)
 		{
 			covL->dmap_data[i][j] = (float **)malloc(map_size * sizeof(float *));
 			for (r = 0; r < map_size; r++)

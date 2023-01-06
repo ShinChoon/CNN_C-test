@@ -50,34 +50,36 @@ int main()
     float *bias_array = bias_mapping(cnn->C1, &bias_number);
 
     // /*initalize VMM and use MAC operation*/
-    VMM *vmm = initializeVMM(cnn);
-    float ***output_array = vmm->MACoperation(input_data_array, weight_array, VMM_turns, 1);
+    // VMM *vmm = initializeVMM(cnn);
+    // float ***output_array = vmm->MACoperation(input_data_array, weight_array, VMM_turns, 1);
 
-    Conv_image(cnn->C1, cnn->S2, output_array, VMM_turns, weights_number, 1);
+    // Conv_image(cnn->C1, cnn->S2, output_array, VMM_turns, weights_number, 1);
 
-    /*after convolution result from ADC*/
-    _CnnFF(cnn->C1, cnn->S2, test_images->image_point[0].image_data);
+    // /*after convolution result from ADC*/
+    // _CnnFF(cnn->C1, cnn->S2, test_images->image_point[0].image_data);
 
-    /*2nd convolution*/
-    int map_size = 3;
-    MatSize input_2nd_size;
-    input_2nd_size.columns = (input_size.columns-map_size+1)/2;
-    input_2nd_size.rows = (input_size.rows-map_size+1)/2;
+    // /*2nd convolution*/
+    // int map_size = 3;
+    // MatSize input_2nd_size;
+    // input_2nd_size.columns = (input_size.columns-map_size+1)/2;
+    // input_2nd_size.rows = (input_size.rows-map_size+1)/2;
 
 
-    MnistImage* outputS2[cnn->S2->output_channels];
-    for (int i = 0; i < sizeof(cnn->S2->output_channels); i++)
-    {
-        outputS2[i] = Output_image(input_2nd_size.columns,
-                                input_2nd_size.columns,
-                                cnn->S2->y[i]);
-    }
+    // MnistImage* outputS2[cnn->S2->output_channels];
+    // for (int i = 0; i < sizeof(cnn->S2->output_channels); i++)
+    // {
+    //     outputS2[i] = Output_image(input_2nd_size.columns,
+    //                             input_2nd_size.columns,
+    //                             cnn->S2->y[i]);
+    // }
 
-    float ***input2_data_array = inputs_mapping(cnn->C3, outputS2,
-                                            &VMM_turns, 2);
-    float ***weight2_array = weights_mapping(cnn->C3, &weights_number,2);
-    float *bias2_array = bias_mapping(cnn->C3, &bias_number);
+    // float ***input2_data_array = inputs_mapping(cnn->C3, outputS2,
+    //                                         &VMM_turns, 2);
+    // float ***weight2_array = weights_mapping(cnn->C3, &weights_number,2);
+    // float *bias2_array = bias_mapping(cnn->C3, &bias_number);
     
+
+
     // /*debug: create pgm files, later use convert in terminal to create png*/
     // /*save data as image*/
     // char *filename = (char *)malloc(sizeof(char) * 13);
@@ -98,6 +100,10 @@ int main()
 
     return 0;
 }
+
+
+
+
 
 void _CnnSetup(Cnn *cnn, MatSize input_size, int output_size)
 {
@@ -557,7 +563,6 @@ float **inputs_mapping(CovLayer *cc, MnistImage **images, int *VMM_turns, int sc
         }
     }
 
-
     *VMM_turns = count_y;
 
     // /*create file for test*/
@@ -571,19 +576,18 @@ float **inputs_mapping(CovLayer *cc, MnistImage **images, int *VMM_turns, int sc
     //     }
     //     fprintf(fpt, "\n");
     // }
-
     // fclose(fpt);
 
-    // for (int d = 0; d < scaling; d++)
-    // {
-    //     for (int i = 0; i < count_y; i++)
-    //     {
-    //         for (int h = 0; h < IMCrow; h++)
-    //             printf("%f ", VMM_input_array[d][i][h]);
-    //         printf("@@@@\n");
-    //     }
-    //     printf("@@@@scalling\n");
-    // }
+    for (int d = 0; d < scaling; d++)
+    {
+        for (int i = 0; i < count_y; i++)
+        {
+            for (int h = 0; h < IMCrow; h++)
+                printf("%f ", VMM_input_array[d][i][h]);
+            printf("@@@@\n");
+        }
+        printf("@@@@scalling\n");
+    }
 
     return VMM_input_array;
 }

@@ -93,38 +93,25 @@ CovLayer *InitialCovLayer(int input_width, int input_height, int map_size,
 			}
 		}
 	}
-	covL->dmap_data = (float ****)malloc(output_channels * sizeof(float ***));
-	for (i = 0; i < output_channels; i++)
-	{
-		covL->dmap_data[i] = (float ***)malloc(input_channels * sizeof(float **));
-		for (j = 0; j < input_channels; j++)
-		{
-			covL->dmap_data[i][j] = (float **)malloc(map_size * sizeof(float *));
-			for (r = 0; r < map_size; r++)
-			{
-				covL->dmap_data[i][j][r] = (float *)calloc(map_size, sizeof(float));
-			}
-		}
-	}
 
-	covL->basic_data = (float *)calloc(output_channels, sizeof(float));
+	covL->basic_data = (float *)malloc(output_channels * sizeof(float));
 
 	int outW = input_width - map_size + 1;
 	int outH = input_height - map_size + 1;
 
-	covL->d = (float ***)malloc(output_channels * sizeof(float **));
+	// covL->d = (float ***)malloc(output_channels * sizeof(float **));
 	covL->v = (float ***)malloc(output_channels * sizeof(float **));
-	covL->y = (float ***)malloc(output_channels * sizeof(float **));
+	// covL->y = (float ***)malloc(output_channels * sizeof(float **));
 	for (j = 0; j < output_channels; j++)
 	{
-		covL->d[j] = (float **)malloc(outH * sizeof(float *));
+		// covL->d[j] = (float **)malloc(outH * sizeof(float *));
 		covL->v[j] = (float **)malloc(outH * sizeof(float *));
-		covL->y[j] = (float **)malloc(outH * sizeof(float *));
+		// covL->y[j] = (float **)malloc(outH * sizeof(float *));
 		for (r = 0; r < outH; r++)
 		{
-			covL->d[j][r] = (float *)calloc(outW, sizeof(float));
-			covL->v[j][r] = (float *)calloc(outW, sizeof(float));
-			covL->y[j][r] = (float *)calloc(outW, sizeof(float));
+			// covL->d[j][r] = (float *)calloc(outW, sizeof(float));
+			covL->v[j][r] = (float *)malloc(outW * sizeof(float));
+			// covL->y[j][r] = (float *)calloc(outW, sizeof(float));
 		}
 	}
 
@@ -143,22 +130,22 @@ PoolingLayer *InitialPoolingLayer(int input_width, int input_height,
 	poolL->output_channels = output_channels;
 	poolL->pooling_type = pooling_type;
 
-	poolL->basic_data = (float *)calloc(output_channels, sizeof(float));
+	poolL->basic_data = (float *)malloc(output_channels * sizeof(float));
 
 	int outW = input_width / map_size;
 	int outH = input_height / map_size;
 
 	int j, r;
-	poolL->d = (float ***)malloc(output_channels * sizeof(float **));
+	// poolL->d = (float ***)malloc(output_channels * sizeof(float **));
 	poolL->y = (float ***)malloc(output_channels * sizeof(float **));
 	for (j = 0; j < output_channels; j++)
 	{
-		poolL->d[j] = (float **)malloc(outH * sizeof(float *));
+		// poolL->d[j] = (float **)malloc(outH * sizeof(float *));
 		poolL->y[j] = (float **)malloc(outH * sizeof(float *));
 		for (r = 0; r < outH; r++)
 		{
-			poolL->d[j][r] = (float *)calloc(outW, sizeof(float));
-			poolL->y[j][r] = (float *)calloc(outW, sizeof(float));
+			// poolL->d[j][r] = (float *)malloc(outW * sizeof(float));
+			poolL->y[j][r] = (float *)malloc(outW * sizeof(float));
 		}
 	}
 
@@ -172,11 +159,11 @@ OutputLayer *InitOutputLayer(int input_num, int output_num)
 	outL->input_num = input_num;
 	outL->output_num = output_num;
 
-	outL->basic_data = (float *)calloc(output_num, sizeof(float));
+	outL->basic_data = (float *)malloc(output_num * sizeof(float));
 
-	outL->d = (float *)calloc(output_num, sizeof(float));
-	outL->v = (float *)calloc(output_num, sizeof(float));
-	outL->y = (float *)calloc(output_num, sizeof(float));
+	outL->d = (float *)malloc(output_num * sizeof(float));
+	outL->v = (float *)malloc(output_num * sizeof(float));
+	outL->y = (float *)malloc(output_num * sizeof(float));
 
 	//
 	outL->wData = (float **)malloc(output_num * sizeof(float *)); //

@@ -30,4 +30,6 @@ LabelArray ReadLabels(const char* filename);  //Read labels function
 ImageArray ReadImages(const char* filename);   //Read Images function
 void SaveImage(ImageArray imgarr,char* filedir); //Save Images function.
 
+int ReverseInt(int integer);
+
 #endif

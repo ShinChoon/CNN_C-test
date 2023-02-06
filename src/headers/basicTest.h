@@ -10,7 +10,7 @@ typedef struct VMMStructure
     int cols;
     int rows;
     Cnn *Cnn;
-    float **(*MACoperation)(float **, float ***, int, int);
+    float ***(*MACoperation)(float ***, float ***, int, int);
 } VMM;
 
 struct weight_map{
@@ -22,18 +22,24 @@ VMM *initializeVMM(Cnn *cnn);
 
 float *bias_mapping(CovLayer *cc, int *bias_number);
 float ***weights_mapping(CovLayer *cc, int *weights_number, int Scaling);
-float **inputs_mapping(CovLayer *cc, MnistImage **inputimages, int *VMM_turns, int scaling);
+float ***generate_1d_input(CovLayer *cc, MnistImage **inputimages, int *VMM_turns, int scaling);
+void inputs_mapping(MnistImage **images, float **maplist, int *VMM_turns, int scaling, int part_index);
+void assign_to_sub_array(float **maplist, float *temp_input, int size_xx, int count_y);
 
-void _CnnFF(CovLayer* conv_layer, PoolingLayer* pool_layer, float **input_data);
+int converfloat_int8(float number, int isweight);
+void _CnnFF(CovLayer *conv_layer, PoolingLayer *pool_layer, float **input_data);
 void _CnnSetup(Cnn *cnn, MatSize input_size, int output_size);
-void _ImportCnn(Cnn *cnn, const char *filename);
+void _ImportCnn(Cnn *cnn);
+
+void freeConvLayer(CovLayer *cnn);
+
 ImageArray _ReadImages(const char *filename);
 const char *getfield(char *line, int num);
-void load_weights(FILE *file_point, CovLayer *cc);
-void load_bias(FILE *file_point, CovLayer *cc);
+void load_weights(CovLayer *cc, float ****weights);
+void load_bias(CovLayer *cc, float *bias);
 
 void Conv_image(CovLayer *conv_layer, PoolingLayer *pool_layer, float ***input_array, int VMM_turns, int weights_number, int scaling);
-float **MACoperation(float ***input_array, float ***weight_array, int VMM_turns, int Scaling);
+float ***MACoperation(float ***input_array, float ***weight_array, int VMM_turns, int Scaling);
 void save_image(int scale, float **image_data, const char *filename);
 void read_data(char* address, char* data);
 void write_data(char *address, char *data);

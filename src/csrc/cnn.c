@@ -101,17 +101,17 @@ CovLayer *InitialCovLayer(int input_width, int input_height, int map_size,
 
 	// covL->d = (float ***)malloc(output_channels * sizeof(float **));
 	covL->v = (float ***)malloc(output_channels * sizeof(float **));
-	// covL->y = (float ***)malloc(output_channels * sizeof(float **));
+	covL->y = (float ***)malloc(output_channels * sizeof(float **));
 	for (j = 0; j < output_channels; j++)
 	{
 		// covL->d[j] = (float **)malloc(outH * sizeof(float *));
 		covL->v[j] = (float **)malloc(outH * sizeof(float *));
-		// covL->y[j] = (float **)malloc(outH * sizeof(float *));
+		covL->y[j] = (float **)malloc(outH * sizeof(float *));
 		for (r = 0; r < outH; r++)
 		{
 			// covL->d[j][r] = (float *)calloc(outW, sizeof(float));
 			covL->v[j][r] = (float *)malloc(outW * sizeof(float));
-			// covL->y[j][r] = (float *)calloc(outW, sizeof(float));
+			covL->y[j][r] = (float *)calloc(outW, sizeof(float));
 		}
 	}
 

@@ -53,7 +53,7 @@ void CnnSetup(Cnn *cnn, MatSize input_size, int output_size)
 	cnn->O6 = InitOutputLayer(temp_input_size.columns * temp_input_size.rows * 32,
 							  output_size);
 
-	cnn->e = (float *)calloc(cnn->O6->output_num, sizeof(float));
+	cnn->e = calloc(cnn->O6->output_num, sizeof(*(cnn->e)));
 }
 
 CovLayer *InitialCovLayer(int input_width, int input_height, int map_size,
@@ -62,7 +62,7 @@ CovLayer *InitialCovLayer(int input_width, int input_height, int map_size,
 	mode_conv = 2: VALID 1: SAME 0: FULL
 */
 {
-	CovLayer *covL = (CovLayer *)malloc(sizeof(CovLayer));
+	CovLayer *covL = malloc(sizeof(*covL));
 
 	covL->input_height = input_height;
 	covL->input_width = input_width;
@@ -74,44 +74,38 @@ CovLayer *InitialCovLayer(int input_width, int input_height, int map_size,
 
 	covL->is_full_connect = true; //
 	int i, j, c, r;
-	srand((unsigned)time(NULL));
-	covL->map_data = (float ****)malloc(output_channels * sizeof(float ***));
-	for (i = 0; i < output_channels; i++)
-	{
-		covL->map_data[i] = (float ***)malloc(input_channels * sizeof(float **));
-		for (j = 0; j < input_channels; j++)
-		{
-			covL->map_data[i][j] = (float **)malloc(map_size * sizeof(float *));
-			for (r = 0; r < map_size; r++)
-			{
-				covL->map_data[i][j][r] = (float *)malloc(map_size * sizeof(float));
-				for (c = 0; c < map_size; c++)
-				{
-					float randnum = (((float)rand() / (float)RAND_MAX) - 0.5) * 2;
-					covL->map_data[i][j][r][c] = randnum * (sqrt((float)6.0 / (float)(map_size * map_size * (input_channels + output_channels))));
-				}
-			}
-		}
-	}
+	// covL->map_data = malloc(output_channels * sizeof(*covL->map_data));
+	// for (i = 0; i < output_channels; i++)
+	// {
+	// 	covL->map_data[i] = malloc(input_channels * sizeof(*(covL->map_data)[i]));
+	// 	for (j = 0; j < input_channels; j++)
+	// 	{
+	// 		covL->map_data[i][j] = malloc(map_size * sizeof(*(covL->map_data)[i][j]));
+	// 		for (r = 0; r < map_size; r++)
+	// 		{
+	// 			covL->map_data[i][j][r] = malloc(map_size * sizeof(*(covL->map_data)[i][j][r]));
+	// 		}
+	// 	}
+	// }
 
-	covL->basic_data = (float *)malloc(output_channels * sizeof(float));
+	// covL->basic_data = malloc(output_channels * sizeof(*(covL->basic_data)));
 
 	int outW = input_width - map_size + 1;
 	int outH = input_height - map_size + 1;
 
-	// covL->d = (float ***)malloc(output_channels * sizeof(float **));
-	covL->v = (float ***)malloc(output_channels * sizeof(float **));
-	covL->y = (float ***)malloc(output_channels * sizeof(float **));
+	// covL->d = (uint8_t ***)malloc(output_channels * sizeof(uint8_t **));
+	covL->v = malloc(output_channels * sizeof(*(covL->v)));
+	covL->y = malloc(output_channels * sizeof(*(covL->v)));
 	for (j = 0; j < output_channels; j++)
 	{
-		// covL->d[j] = (float **)malloc(outH * sizeof(float *));
-		covL->v[j] = (float **)malloc(outH * sizeof(float *));
-		covL->y[j] = (float **)malloc(outH * sizeof(float *));
+		// covL->d[j] = (uint8_t **)malloc(outH * sizeof(uint8_t *));
+		covL->v[j] = malloc(outH * sizeof(*(covL->v)[j]));
+		covL->y[j] = malloc(outH * sizeof(*(covL->v)[j]));
 		for (r = 0; r < outH; r++)
 		{
-			// covL->d[j][r] = (float *)calloc(outW, sizeof(float));
-			covL->v[j][r] = (float *)malloc(outW * sizeof(float));
-			covL->y[j][r] = (float *)calloc(outW, sizeof(float));
+			// covL->d[j][r] = (uint8_t *)calloc(outW, sizeof(uint8_t));
+			covL->v[j][r] = malloc(outW * sizeof(*(covL->v)[j][r]));
+			covL->y[j][r] = malloc(outW * sizeof(*(covL->v)[j][r]));
 		}
 	}
 
@@ -121,7 +115,7 @@ CovLayer *InitialCovLayer(int input_width, int input_height, int map_size,
 PoolingLayer *InitialPoolingLayer(int input_width, int input_height,
 								  int map_size, int input_channels, int output_channels, int pooling_type)
 {
-	PoolingLayer *poolL = (PoolingLayer *)malloc(sizeof(PoolingLayer));
+	PoolingLayer *poolL = malloc(sizeof(*poolL));
 
 	poolL->input_height = input_height;
 	poolL->input_width = input_width;
@@ -130,22 +124,22 @@ PoolingLayer *InitialPoolingLayer(int input_width, int input_height,
 	poolL->output_channels = output_channels;
 	poolL->pooling_type = pooling_type;
 
-	poolL->basic_data = (float *)malloc(output_channels * sizeof(float));
+	poolL->basic_data = malloc(output_channels * sizeof(*(poolL->basic_data)));
 
 	int outW = input_width / map_size;
 	int outH = input_height / map_size;
 
 	int j, r;
-	// poolL->d = (float ***)malloc(output_channels * sizeof(float **));
-	poolL->y = (float ***)malloc(output_channels * sizeof(float **));
+	// poolL->d = (uint8_t ***)malloc(output_channels * sizeof(uint8_t **));
+	poolL->y = malloc(output_channels * sizeof(*(poolL->y)));
 	for (j = 0; j < output_channels; j++)
 	{
-		// poolL->d[j] = (float **)malloc(outH * sizeof(float *));
-		poolL->y[j] = (float **)malloc(outH * sizeof(float *));
+		// poolL->d[j] = (uint8_t **)malloc(outH * sizeof(uint8_t *));
+		poolL->y[j] = malloc(outH * sizeof(*(poolL->y[j])));
 		for (r = 0; r < outH; r++)
 		{
-			// poolL->d[j][r] = (float *)malloc(outW * sizeof(float));
-			poolL->y[j][r] = (float *)malloc(outW * sizeof(float));
+			// poolL->d[j][r] = (uint8_t *)calloc(outW, sizeof(uint8_t));
+			poolL->y[j][r] = malloc(outW * sizeof(*(poolL->y[j][r])));
 		}
 	}
 
@@ -154,29 +148,29 @@ PoolingLayer *InitialPoolingLayer(int input_width, int input_height,
 
 OutputLayer *InitOutputLayer(int input_num, int output_num)
 {
-	OutputLayer *outL = (OutputLayer *)malloc(sizeof(OutputLayer));
+	OutputLayer *outL = (OutputLayer *)malloc(sizeof(*outL));
 
 	outL->input_num = input_num;
 	outL->output_num = output_num;
 
-	outL->basic_data = (float *)malloc(output_num * sizeof(float));
+	outL->basic_data = (uint8_t *)calloc(output_num, sizeof(uint8_t));
 
-	outL->d = (float *)malloc(output_num * sizeof(float));
-	outL->v = (float *)malloc(output_num * sizeof(float));
-	outL->y = (float *)malloc(output_num * sizeof(float));
+	outL->d = malloc(output_num * sizeof(uint8_t));
+	outL->v = malloc(output_num * sizeof(uint8_t));
+	outL->y = malloc(output_num * sizeof(uint8_t));
 
 	//
-	outL->wData = (float **)malloc(output_num * sizeof(float *)); //
+	outL->wData = (uint8_t **)malloc(output_num * sizeof(uint8_t *)); //
 
 	srand((unsigned)time(NULL));
 	for (int i = 0; i < output_num; i++)
 	{
-		outL->wData[i] = (float *)malloc(input_num * sizeof(float));
-		for (int j = 0; j < input_num; j++)
-		{
-			float randnum = (((float)rand() / (float)RAND_MAX) - 0.5) * 2; //
-			outL->wData[i][j] = randnum * sqrt((float)6.0 / (float)(input_num + output_num));
-		}
+		outL->wData[i] = (uint8_t *)malloc(input_num * sizeof(uint8_t));
+		// for (int j = 0; j < input_num; j++)
+		// {
+		// uint8_t randnum = (((uint8_t)rand() / (uint8_t)RAND_MAX) - 0.5) * 2; //
+		// outL->wData[i][j] = randnum * sqrt((uint8_t)6.0 / (uint8_t)(input_num + output_num));
+		// }
 	}
 
 	outL->is_full_connect = true;
@@ -184,10 +178,10 @@ OutputLayer *InitOutputLayer(int input_num, int output_num)
 	return outL;
 }
 
-int vecmaxIndex(float *vec, int veclength)
+int vecmaxIndex(uint8_t *vec, int veclength)
 {
 	int i;
-	float maxnum = -1.0;
+	uint8_t maxnum = 0;
 	int maxIndex = 0;
 	for (i = 0; i < veclength; i++)
 	{
@@ -200,8 +194,8 @@ int vecmaxIndex(float *vec, int veclength)
 	return maxIndex;
 }
 
-float CnnTest(Cnn *cnn, ImageArray input_data,
-			  LabelArray output_data, int test_num)
+uint8_t CnnTest(Cnn *cnn, ImageArray input_data,
+				LabelArray output_data, int test_num)
 {
 	int n = 0;
 	int incorrect_num = 0;
@@ -219,7 +213,7 @@ float CnnTest(Cnn *cnn, ImageArray input_data,
 		}
 		CnnClear(cnn);
 	}
-	return (float)incorrect_num / (float)test_num;
+	return (uint8_t)incorrect_num / (uint8_t)test_num;
 }
 
 // Save CNN
@@ -233,33 +227,33 @@ void SaveCnn(Cnn *cnn, const char *filename)
 	for (int i = 0; i < cnn->C1->input_channels; i++)
 		for (int j = 0; j < cnn->C1->output_channels; j++)
 			for (int m = 0; m < cnn->C1->map_size; m++)
-				fwrite(cnn->C1->map_data[i][j][m], sizeof(float),
+				fwrite(cnn->C1->map_data[i][j][m], sizeof(uint8_t),
 					   cnn->C1->map_size, file_point);
 
-	fwrite(cnn->C1->basic_data, sizeof(float),
+	fwrite(cnn->C1->basic_data, sizeof(uint8_t),
 		   cnn->C1->output_channels, file_point);
 
 	for (int i = 0; i < cnn->C3->input_channels; i++)
 		for (int j = 0; j < cnn->C3->output_channels; j++)
 			for (int m = 0; m < cnn->C3->map_size; m++)
-				fwrite(cnn->C3->map_data[i][j][m], sizeof(float),
+				fwrite(cnn->C3->map_data[i][j][m], sizeof(uint8_t),
 					   cnn->C3->map_size, file_point);
 
-	fwrite(cnn->C3->basic_data, sizeof(float),
+	fwrite(cnn->C3->basic_data, sizeof(uint8_t),
 		   cnn->C3->output_channels, file_point);
 
 	for (int i = 0; i < cnn->O5->output_num; i++)
-		fwrite(cnn->O5->wData[i], sizeof(float),
+		fwrite(cnn->O5->wData[i], sizeof(uint8_t),
 			   cnn->O5->input_num, file_point);
 
-	fwrite(cnn->O5->basic_data, sizeof(float),
+	fwrite(cnn->O5->basic_data, sizeof(uint8_t),
 		   cnn->O5->output_num, file_point);
 
 	for (int i = 0; i < cnn->O6->output_num; i++)
-		fwrite(cnn->O6->wData[i], sizeof(float),
+		fwrite(cnn->O6->wData[i], sizeof(uint8_t),
 			   cnn->O6->input_num, file_point);
 
-	fwrite(cnn->O6->basic_data, sizeof(float),
+	fwrite(cnn->O6->basic_data, sizeof(uint8_t),
 		   cnn->O6->output_num, file_point);
 
 	fclose(file_point);
@@ -281,29 +275,29 @@ void ImportCnn(Cnn *cnn, const char *filename)
 			for (r = 0; r < cnn->C1->map_size; r++)
 				for (c = 0; c < cnn->C1->map_size; c++)
 				{
-					float *in = (float *)malloc(sizeof(float));
-					fread(in, sizeof(float), 1, file_point);
+					uint8_t *in = malloc(sizeof(*in));
+					fread(in, sizeof(uint8_t), 1, file_point);
 					cnn->C1->map_data[i][j][r][c] = *in;
 				}
 
 	for (i = 0; i < cnn->C1->output_channels; i++)
-		fread(&cnn->C1->basic_data[i], sizeof(float), 1, file_point);
+		fread(&cnn->C1->basic_data[i], sizeof(uint8_t), 1, file_point);
 
 	for (i = 0; i < cnn->C3->input_channels; i++)
 		for (j = 0; j < cnn->C3->output_channels; j++)
 			for (r = 0; r < cnn->C3->map_size; r++)
 				for (c = 0; c < cnn->C3->map_size; c++)
-					fread(&cnn->C3->map_data[i][j][r][c], sizeof(float), 1, file_point);
+					fread(&cnn->C3->map_data[i][j][r][c], sizeof(uint8_t), 1, file_point);
 
 	for (i = 0; i < cnn->C3->output_channels; i++)
-		fread(&cnn->C3->basic_data[i], sizeof(float), 1, file_point);
+		fread(&cnn->C3->basic_data[i], sizeof(uint8_t), 1, file_point);
 
 	for (i = 0; i < cnn->O6->output_num; i++)
 		for (j = 0; j < cnn->O6->input_num; j++)
-			fread(&cnn->O6->wData[i][j], sizeof(float), 1, file_point);
+			fread(&cnn->O6->wData[i][j], sizeof(uint8_t), 1, file_point);
 
 	for (i = 0; i < cnn->O6->output_num; i++)
-		fread(&cnn->O6->basic_data[i], sizeof(float), 1, file_point);
+		fread(&cnn->O6->basic_data[i], sizeof(uint8_t), 1, file_point);
 
 	fclose(file_point);
 }
@@ -311,7 +305,7 @@ void ImportCnn(Cnn *cnn, const char *filename)
 void CnnTrain(Cnn *cnn, ImageArray input_data, LabelArray output_data,
 			  TrainOptions opts, int trainNum)
 {
-	cnn->L = (float *)malloc(trainNum * sizeof(float));
+	cnn->L = (uint8_t *)malloc(trainNum * sizeof(uint8_t));
 	int e;
 	for (e = 0; e < opts.numepochs; e++)
 	{
@@ -334,22 +328,22 @@ void CnnTrain(Cnn *cnn, ImageArray input_data, LabelArray output_data,
 			CnnApplyGrads(cnn, opts, input_data->image_point[n].image_data);
 
 			CnnClear(cnn);
-			float l = 0.0;
+			uint8_t l = 0.0;
 			int i;
 			for (i = 0; i < cnn->O6->output_num; i++)
 				l = l + cnn->e[i] * cnn->e[i];
 			if (n == 0)
-				cnn->L[n] = l / (float)2.0;
+				cnn->L[n] = l / (uint8_t)2.0;
 			else
-				cnn->L[n] = cnn->L[n - 1] * 0.99 + 0.01 * l / (float)2.0;
+				cnn->L[n] = cnn->L[n - 1] * 0.99 + 0.01 * l / (uint8_t)2.0;
 		}
 	}
 }
 
-void CnnFF(Cnn *cnn, float **input_data)
+void CnnFF(Cnn *cnn, uint8_t **input_data)
 {
-	int output_sizeW = cnn->S2->input_width;
-	int output_sizeH = cnn->S2->input_height;
+	// int output_sizeW = cnn->S2->input_width;
+	// int output_sizeH = cnn->S2->input_height;
 
 	MatSize map_size = {cnn->C1->map_size, cnn->C1->map_size};
 	MatSize input_size = {cnn->C1->input_width, cnn->C1->input_height};
@@ -358,16 +352,16 @@ void CnnFF(Cnn *cnn, float **input_data)
 	{
 		for (int j = 0; j < (cnn->C1->input_channels); j++)
 		{
-			float **mapout = 0;
+			uint8_t **mapout = 0;
 			if (cnn->C1->mode_conv == 0)
 				mapout = MatCov(cnn->C1->map_data[j][i], map_size,
-										input_data, input_size, FULL);
+								input_data, input_size, FULL);
 			else if (cnn->C3->mode_conv == 1)
 				mapout = MatCov(cnn->C1->map_data[j][i], map_size,
-										input_data, input_size, SAME);
+								input_data, input_size, SAME);
 			else
 				mapout = MatCov(cnn->C1->map_data[j][i], map_size,
-										input_data, input_size, VALID);
+								input_data, input_size, VALID);
 
 			MatAdd(cnn->C1->v[i], cnn->C1->v[i], output_size, mapout, output_size);
 
@@ -410,16 +404,16 @@ void CnnFF(Cnn *cnn, float **input_data)
 	{
 		for (int j = 0; j < (cnn->C3->input_channels); j++)
 		{
-			float **mapout = 0;
-			if(cnn->C3->mode_conv == 0)
+			uint8_t **mapout = 0;
+			if (cnn->C3->mode_conv == 0)
 				mapout = MatCov(cnn->C3->map_data[j][i], map_size,
-										cnn->S2->y[j], input_size, FULL);
+								cnn->S2->y[j], input_size, FULL);
 			else if (cnn->C3->mode_conv == 1)
 				mapout = MatCov(cnn->C3->map_data[j][i], map_size,
-										cnn->S2->y[j], input_size, SAME);
+								cnn->S2->y[j], input_size, SAME);
 			else
 				mapout = MatCov(cnn->C3->map_data[j][i], map_size,
-										cnn->S2->y[j], input_size, VALID);
+								cnn->S2->y[j], input_size, VALID);
 
 			MatAdd(cnn->C3->v[i], cnn->C3->v[i], output_size, mapout, output_size);
 
@@ -448,7 +442,7 @@ void CnnFF(Cnn *cnn, float **input_data)
 					   input_size, cnn->S4->map_size);
 	}
 
-	float *O5inData = (float *)malloc((cnn->O5->input_num) * sizeof(float));
+	uint8_t *O5inData = (uint8_t *)malloc((cnn->O5->input_num) * sizeof(uint8_t));
 
 	for (int i = 0; i < (cnn->S4->output_channels); i++)
 		for (int row = 0; row < output_size.rows; row++)
@@ -464,10 +458,10 @@ void CnnFF(Cnn *cnn, float **input_data)
 
 	free(O5inData);
 
-	float *O6inData = (float *)malloc((cnn->O6->input_num) * sizeof(float));
+	uint8_t *O6inData = (uint8_t *)malloc((cnn->O6->input_num) * sizeof(uint8_t));
 
 	for (int i = 0; i < (cnn->O5->output_num); i++)
-			O6inData[i] = cnn->O5->y[i];
+		O6inData[i] = cnn->O5->y[i];
 
 	nnSize.columns = cnn->O6->input_num;
 	nnSize.rows = cnn->O6->output_num;
@@ -481,27 +475,32 @@ void CnnFF(Cnn *cnn, float **input_data)
 }
 
 //
-float ActivationSigma(float input, float bas) // sigma activatiion function
+uint8_t ActivationSigma(uint8_t input, uint8_t bas) // sigma activatiion function
 {
-	float temp = input + bas;
-	return (float)1.0 / ((float)(1.0 + exp(-temp)));
+	uint8_t temp = input + bas;
+	return (uint8_t)1.0 / ((uint8_t)(1.0 + exp(-temp)));
 }
 
 /**********************************************************************/
 /*      NEURAL NETWORK                                                */
 /**********************************************************************/
-float ActivationReLu(float input, float bas)
+uint8_t ActivationReLu(uint8_t input, uint16_t bas)
 {
-	float temp = input + bas;
-	if ((temp > 0) && (temp <= 1))
+	uint8_t temp = input + bas - 31;
+	if ((temp > 31) && (temp <= 255))
+	{
 		return temp;
-	else if (temp > 1)
-		return 1.0;
-	else if (temp <= 0)
-		return (float)0;
+	}
+	else if (temp > 255)
+	{
+		return 255;
+	}
+	else
+	{
+		return (uint8_t)31;
+	}
 }
-
-void AvgPooling(float **output, MatSize output_size, float **input,
+void AvgPooling(uint8_t **output, MatSize output_size, uint8_t **input,
 				MatSize input_size, int map_size)
 {
 	int outputW = input_size.columns / map_size;
@@ -514,16 +513,16 @@ void AvgPooling(float **output, MatSize output_size, float **input,
 	for (i = 0; i < outputH; i++)
 		for (j = 0; j < outputW; j++)
 		{
-			float sum = 0.0;
+			uint8_t sum = 0.0;
 			for (m = i * map_size; m < i * map_size + map_size; m++)
 				for (n = j * map_size; n < j * map_size + map_size; n++)
 					sum = sum + input[m][n];
 
-			output[i][j] = sum / (float)(map_size * map_size);
+			output[i][j] = sum / (uint8_t)(map_size * map_size);
 		}
 }
 
-void MaxPooling(float **output, MatSize output_size, float **input,
+void MaxPooling(uint8_t **output, MatSize output_size, uint8_t **input,
 				MatSize input_size, int map_size)
 {
 	int outputW = input_size.columns / map_size;
@@ -536,7 +535,7 @@ void MaxPooling(float **output, MatSize output_size, float **input,
 	for (i = 0; i < outputH; i++)
 		for (j = 0; j < outputW; j++)
 		{
-			float pMax = 0.0;
+			uint8_t pMax = 0.0;
 			for (m = i * map_size; m < i * map_size + map_size; m++)
 				for (n = j * map_size; n < j * map_size + map_size; n++)
 					if (pMax < input[m][n])
@@ -546,16 +545,16 @@ void MaxPooling(float **output, MatSize output_size, float **input,
 		}
 }
 //
-float vecMulti(float *vec1, float *vec2, int vecL) //
+uint8_t vecMulti(uint8_t *vec1, uint8_t *vec2, int vecL) //
 {
 	int i;
-	float m = 0;
+	uint8_t m = 0;
 	for (i = 0; i < vecL; i++)
 		m = m + vec1[i] * vec2[i];
 	return m;
 }
 
-void nnff(float *output, float *input, float **wdata, float *bas, MatSize nnSize)
+void nnff(uint8_t *output, uint8_t *input, uint8_t **wdata, uint8_t *bas, MatSize nnSize)
 {
 	int w = nnSize.columns;
 	int h = nnSize.rows;
@@ -565,13 +564,12 @@ void nnff(float *output, float *input, float **wdata, float *bas, MatSize nnSize
 		output[i] = vecMulti(input, wdata[i], w) + bas[i];
 }
 
-float sigma_derivation(float y)
+uint8_t sigma_derivation(uint8_t y)
 { //
 	return y * (1 - y);
 }
 
-
-void CnnBP(Cnn *cnn, float *output_data)
+void CnnBP(Cnn *cnn, uint8_t *output_data)
 {
 	for (int i = 0; i < cnn->O6->output_num; i++)
 		cnn->e[i] = cnn->O6->y[i] - output_data[i];
@@ -595,12 +593,12 @@ void CnnBP(Cnn *cnn, float *output_data)
 				}
 
 	for (int i = 0; i < cnn->O5->output_num; i++)
-				for (int j = 0; j < cnn->O6->output_num; j++)
-				{
-					int wInt = i;
-					cnn->O5->d[i] = cnn->O5->d[i] +
-											  cnn->O6->d[j] * cnn->O6->wData[j][wInt];
-				}
+		for (int j = 0; j < cnn->O6->output_num; j++)
+		{
+			int wInt = i;
+			cnn->O5->d[i] = cnn->O5->d[i] +
+							cnn->O6->d[j] * cnn->O6->wData[j][wInt];
+		}
 
 	int mapdata = cnn->S4->map_size;
 	MatSize S4dSize;
@@ -609,17 +607,17 @@ void CnnBP(Cnn *cnn, float *output_data)
 
 	for (int i = 0; i < cnn->C3->output_channels; i++)
 	{
-		float **C3e = MatUpSample(cnn->S4->d[i], S4dSize,
-								  cnn->S4->map_size, cnn->S4->map_size);
+		uint8_t **C3e = MatUpSample(cnn->S4->d[i], S4dSize,
+									cnn->S4->map_size, cnn->S4->map_size);
 
 		for (int row = 0; row < cnn->S4->input_height; row++)
 			for (int col = 0; col < cnn->S4->input_width; col++)
 			{
 				// cnn->C3->d[i][row][col] = C3e[row][col] *
-										//   sigma_derivation(cnn->C3->y[i][row][col]) /
-										//   (float)(cnn->S4->map_size * cnn->S4->map_size);
+				//   sigma_derivation(cnn->C3->y[i][row][col]) /
+				//   (uint8_t)(cnn->S4->map_size * cnn->S4->map_size);
 				cnn->C3->d[i][row][col] = C3e[row][col] /
-										  (float)(cnn->S4->map_size * cnn->S4->map_size);
+										  (uint8_t)(cnn->S4->map_size * cnn->S4->map_size);
 			}
 
 		for (int row = 0; row < cnn->S4->input_height; row++)
@@ -636,8 +634,8 @@ void CnnBP(Cnn *cnn, float *output_data)
 	{
 		for (int j = 0; j < cnn->C3->output_channels; j++)
 		{
-			float **corr = MatCorrelation(cnn->C3->map_data[i][j], map_size,
-										  cnn->C3->d[j], input_size, FULL);
+			uint8_t **corr = MatCorrelation(cnn->C3->map_data[i][j], map_size,
+											cnn->C3->d[j], input_size, FULL);
 			MatAdd(cnn->S2->d[i], cnn->S2->d[i], output_size, corr, output_size);
 			for (int row = 0; row < output_size.rows; row++)
 				free(corr[row]);
@@ -657,17 +655,17 @@ void CnnBP(Cnn *cnn, float *output_data)
 
 	for (int i = 0; i < cnn->C1->output_channels; i++)
 	{
-		float **C1e = MatUpSample(cnn->S2->d[i], S2dSize,
-								  cnn->S2->map_size, cnn->S2->map_size);
+		uint8_t **C1e = MatUpSample(cnn->S2->d[i], S2dSize,
+									cnn->S2->map_size, cnn->S2->map_size);
 		for (int row = 0; row < cnn->S2->input_height; row++)
 			for (int col = 0; col < cnn->S2->input_width; col++)
 			{
 				// cnn->C1->d[i][row][col] = C1e[row][col] *
-										//   sigma_derivation(cnn->C1->y[i][row][col]) /
-										//   (float)(cnn->S2->map_size * cnn->S2->map_size);
+				//   sigma_derivation(cnn->C1->y[i][row][col]) /
+				//   (uint8_t)(cnn->S2->map_size * cnn->S2->map_size);
 
 				cnn->C1->d[i][row][col] = C1e[row][col] /
-										  (float)(cnn->S2->map_size * cnn->S2->map_size);
+										  (uint8_t)(cnn->S2->map_size * cnn->S2->map_size);
 			}
 		for (int row = 0; row < cnn->S2->input_height; row++)
 			free(C1e[row]);
@@ -677,7 +675,7 @@ void CnnBP(Cnn *cnn, float *output_data)
 }
 
 // Apply Grad
-void CnnApplyGrads(Cnn *cnn, TrainOptions opts, float **input_data)
+void CnnApplyGrads(Cnn *cnn, TrainOptions opts, uint8_t **input_data)
 {
 	MatSize dSize = {cnn->S2->input_height, cnn->S2->input_width};
 	MatSize ySize = {cnn->C1->input_height, cnn->C1->input_width};
@@ -687,8 +685,8 @@ void CnnApplyGrads(Cnn *cnn, TrainOptions opts, float **input_data)
 	{
 		for (int j = 0; j < cnn->C1->input_channels; j++)
 		{
-			float **flipinput_data = MatRotate180(input_data, ySize);
-			float **C1dk = 0;
+			uint8_t **flipinput_data = MatRotate180(input_data, ySize);
+			uint8_t **C1dk = 0;
 			if (cnn->C1->mode_conv == 0)
 				C1dk = MatCov(cnn->C1->d[i], dSize, flipinput_data, ySize, FULL);
 			else if (cnn->C1->mode_conv == 1)
@@ -725,8 +723,8 @@ void CnnApplyGrads(Cnn *cnn, TrainOptions opts, float **input_data)
 	{
 		for (int j = 0; j < cnn->C3->input_channels; j++)
 		{
-			float **flipinput_data = MatRotate180(cnn->S2->y[j], ySize);
-			float **C3dk = 0;
+			uint8_t **flipinput_data = MatRotate180(cnn->S2->y[j], ySize);
+			uint8_t **C3dk = 0;
 			if (cnn->C3->mode_conv == 0)
 				C3dk = MatCov(cnn->C3->d[i], dSize, flipinput_data, ySize, FULL);
 			else if (cnn->C3->mode_conv == 1)
@@ -751,7 +749,7 @@ void CnnApplyGrads(Cnn *cnn, TrainOptions opts, float **input_data)
 								 opts.alpha * MatSum(cnn->C3->d[i], dSize);
 	}
 
-	float *O5inData = (float *)malloc((cnn->O5->input_num) * sizeof(float));
+	uint8_t *O5inData = (uint8_t *)malloc((cnn->O5->input_num) * sizeof(uint8_t));
 
 	MatSize output_size;
 	output_size.columns = cnn->S4->input_width / cnn->S4->map_size;
@@ -774,10 +772,10 @@ void CnnApplyGrads(Cnn *cnn, TrainOptions opts, float **input_data)
 	}
 	free(O5inData);
 
-	float *O6inData = (float *)malloc((cnn->O6->input_num) * sizeof(float));
+	uint8_t *O6inData = (uint8_t *)malloc((cnn->O6->input_num) * sizeof(uint8_t));
 
 	for (int i = 0; i < (cnn->O5->output_num); i++)
-				O6inData[i] = cnn->O5->y[i];
+		O6inData[i] = cnn->O5->y[i];
 
 	for (int j = 0; j < cnn->O6->output_num; j++)
 	{
@@ -799,9 +797,9 @@ void CnnClear(Cnn *cnn)
 		{
 			for (int col = 0; col < cnn->S2->input_width; col++)
 			{
-				cnn->C1->d[j][row][col] = (float)0.0;
-				cnn->C1->v[j][row][col] = (float)0.0;
-				cnn->C1->y[j][row][col] = (float)0.0;
+				cnn->C1->d[j][row][col] = (uint8_t)0.0;
+				cnn->C1->v[j][row][col] = (uint8_t)0.0;
+				cnn->C1->y[j][row][col] = (uint8_t)0.0;
 			}
 		}
 	}
@@ -812,8 +810,8 @@ void CnnClear(Cnn *cnn)
 		{
 			for (int col = 0; col < cnn->C3->input_width; col++)
 			{
-				cnn->S2->d[j][row][col] = (float)0.0;
-				cnn->S2->y[j][row][col] = (float)0.0;
+				cnn->S2->d[j][row][col] = (uint8_t)0.0;
+				cnn->S2->y[j][row][col] = (uint8_t)0.0;
 			}
 		}
 	}
@@ -824,9 +822,9 @@ void CnnClear(Cnn *cnn)
 		{
 			for (int col = 0; col < cnn->S4->input_width; col++)
 			{
-				cnn->C3->d[j][row][col] = (float)0.0;
-				cnn->C3->v[j][row][col] = (float)0.0;
-				cnn->C3->y[j][row][col] = (float)0.0;
+				cnn->C3->d[j][row][col] = (uint8_t)0.0;
+				cnn->C3->v[j][row][col] = (uint8_t)0.0;
+				cnn->C3->y[j][row][col] = (uint8_t)0.0;
 			}
 		}
 	}
@@ -837,28 +835,28 @@ void CnnClear(Cnn *cnn)
 		{
 			for (int col = 0; col < cnn->S4->input_width / cnn->S4->map_size; col++)
 			{
-				cnn->S4->d[j][row][col] = (float)0.0;
-				cnn->S4->y[j][row][col] = (float)0.0;
+				cnn->S4->d[j][row][col] = (uint8_t)0.0;
+				cnn->S4->y[j][row][col] = (uint8_t)0.0;
 			}
 		}
 	}
 
 	for (int n = 0; n < cnn->O5->output_num; n++)
 	{
-		cnn->O5->d[n] = (float)0.0;
-		cnn->O5->v[n] = (float)0.0;
-		cnn->O5->y[n] = (float)0.0;
+		cnn->O5->d[n] = (uint8_t)0.0;
+		cnn->O5->v[n] = (uint8_t)0.0;
+		cnn->O5->y[n] = (uint8_t)0.0;
 	}
 
 	for (int n = 0; n < cnn->O6->output_num; n++)
 	{
-		cnn->O6->d[n] = (float)0.0;
-		cnn->O6->v[n] = (float)0.0;
-		cnn->O6->y[n] = (float)0.0;
+		cnn->O6->d[n] = (uint8_t)0.0;
+		cnn->O6->v[n] = (uint8_t)0.0;
+		cnn->O6->y[n] = (uint8_t)0.0;
 	}
 }
 
-void SaveCnnData(Cnn *cnn, const char *filename, float **inputdata)
+void SaveCnnData(Cnn *cnn, const char *filename, uint8_t **inputdata)
 {
 	FILE *file_point = NULL;
 	file_point = fopen(filename, "wb");
@@ -866,34 +864,34 @@ void SaveCnnData(Cnn *cnn, const char *filename, float **inputdata)
 		printf("[-] <SvaeCNNData> Open Write file failed! <%s>\n", filename);
 
 	for (int i = 0; i < cnn->C1->input_height; i++)
-		fwrite(inputdata[i], sizeof(float), cnn->C1->input_width, file_point);
+		fwrite(inputdata[i], sizeof(uint8_t), cnn->C1->input_width, file_point);
 
 	for (int i = 0; i < cnn->C1->input_channels; i++)
 		for (int j = 0; j < cnn->C1->output_channels; j++)
 			for (int s = 0; s < cnn->C1->map_size; s++)
-				fwrite(cnn->C1->map_data[i][j][s], sizeof(float),
+				fwrite(cnn->C1->map_data[i][j][s], sizeof(uint8_t),
 					   cnn->C1->map_size, file_point);
 
-	fwrite(cnn->C1->basic_data, sizeof(float),
+	fwrite(cnn->C1->basic_data, sizeof(uint8_t),
 		   cnn->C1->output_channels, file_point);
 
 	for (int j = 0; j < cnn->C1->output_channels; j++)
 	{
 		for (int row = 0; row < cnn->S2->input_height; row++)
 		{
-			fwrite(cnn->C1->v[j][row], sizeof(float),
+			fwrite(cnn->C1->v[j][row], sizeof(uint8_t),
 				   cnn->S2->input_width, file_point);
 		}
 
 		for (int row = 0; row < cnn->S2->input_height; row++)
 		{
-			fwrite(cnn->C1->d[j][row], sizeof(float),
+			fwrite(cnn->C1->d[j][row], sizeof(uint8_t),
 				   cnn->S2->input_width, file_point);
 		}
 
 		for (int row = 0; row < cnn->S2->input_height; row++)
 		{
-			fwrite(cnn->C1->y[j][row], sizeof(float),
+			fwrite(cnn->C1->y[j][row], sizeof(uint8_t),
 				   cnn->S2->input_width, file_point);
 		}
 	}
@@ -902,12 +900,12 @@ void SaveCnnData(Cnn *cnn, const char *filename, float **inputdata)
 	{
 		for (int row = 0; row < cnn->C3->input_height; row++)
 		{
-			fwrite(cnn->S2->d[j][row], sizeof(float),
+			fwrite(cnn->S2->d[j][row], sizeof(uint8_t),
 				   cnn->C3->input_width, file_point);
 		}
 		for (int row = 0; row < cnn->C3->input_height; row++)
 		{
-			fwrite(cnn->S2->y[j][row], sizeof(float),
+			fwrite(cnn->S2->y[j][row], sizeof(uint8_t),
 				   cnn->C3->input_width, file_point);
 		}
 	}
@@ -915,29 +913,29 @@ void SaveCnnData(Cnn *cnn, const char *filename, float **inputdata)
 	for (int i = 0; i < cnn->C3->input_channels; i++)
 		for (int j = 0; j < cnn->C3->output_channels; j++)
 			for (int row = 0; row < cnn->C3->map_size; row++)
-				fwrite(cnn->C3->map_data[i][j][row], sizeof(float),
+				fwrite(cnn->C3->map_data[i][j][row], sizeof(uint8_t),
 					   cnn->C3->map_size, file_point);
 
-	fwrite(cnn->C3->basic_data, sizeof(float),
+	fwrite(cnn->C3->basic_data, sizeof(uint8_t),
 		   cnn->C3->output_channels, file_point);
 
 	for (int j = 0; j < cnn->C3->output_channels; j++)
 	{
 		for (int row = 0; row < cnn->S4->input_height; row++)
 		{
-			fwrite(cnn->C3->v[j][row], sizeof(float),
+			fwrite(cnn->C3->v[j][row], sizeof(uint8_t),
 				   cnn->S4->input_width, file_point);
 		}
 
 		for (int row = 0; row < cnn->S4->input_height; row++)
 		{
-			fwrite(cnn->C3->d[j][row], sizeof(float),
+			fwrite(cnn->C3->d[j][row], sizeof(uint8_t),
 				   cnn->S4->input_width, file_point);
 		}
 
 		for (int row = 0; row < cnn->S4->input_height; row++)
 		{
-			fwrite(cnn->C3->y[j][row], sizeof(float),
+			fwrite(cnn->C3->y[j][row], sizeof(uint8_t),
 				   cnn->S4->input_width, file_point);
 		}
 	}
@@ -946,32 +944,32 @@ void SaveCnnData(Cnn *cnn, const char *filename, float **inputdata)
 	{
 		for (int row = 0; row < cnn->S4->input_height / cnn->S4->map_size; row++)
 		{
-			fwrite(cnn->S4->d[j][row], sizeof(float),
+			fwrite(cnn->S4->d[j][row], sizeof(uint8_t),
 				   cnn->S4->input_width / cnn->S4->map_size, file_point);
 		}
 
 		for (int row = 0; row < cnn->S4->input_height / cnn->S4->map_size; row++)
 		{
-			fwrite(cnn->S4->y[j][row], sizeof(float),
+			fwrite(cnn->S4->y[j][row], sizeof(uint8_t),
 				   cnn->S4->input_width / cnn->S4->map_size, file_point);
 		}
 	}
 
 	for (int i = 0; i < cnn->O5->output_num; i++)
-		fwrite(cnn->O5->wData[i], sizeof(float), cnn->O5->input_num, file_point);
+		fwrite(cnn->O5->wData[i], sizeof(uint8_t), cnn->O5->input_num, file_point);
 
-	fwrite(cnn->O5->basic_data, sizeof(float), cnn->O5->output_num, file_point);
-	fwrite(cnn->O5->v, sizeof(float), cnn->O5->output_num, file_point);
-	fwrite(cnn->O5->d, sizeof(float), cnn->O5->output_num, file_point);
-	fwrite(cnn->O5->y, sizeof(float), cnn->O5->output_num, file_point);
+	fwrite(cnn->O5->basic_data, sizeof(uint8_t), cnn->O5->output_num, file_point);
+	fwrite(cnn->O5->v, sizeof(uint8_t), cnn->O5->output_num, file_point);
+	fwrite(cnn->O5->d, sizeof(uint8_t), cnn->O5->output_num, file_point);
+	fwrite(cnn->O5->y, sizeof(uint8_t), cnn->O5->output_num, file_point);
 
 	for (int i = 0; i < cnn->O6->output_num; i++)
-		fwrite(cnn->O6->wData[i], sizeof(float), cnn->O6->input_num, file_point);
+		fwrite(cnn->O6->wData[i], sizeof(uint8_t), cnn->O6->input_num, file_point);
 
-	fwrite(cnn->O6->basic_data, sizeof(float), cnn->O6->output_num, file_point);
-	fwrite(cnn->O6->v, sizeof(float), cnn->O6->output_num, file_point);
-	fwrite(cnn->O6->d, sizeof(float), cnn->O6->output_num, file_point);
-	fwrite(cnn->O6->y, sizeof(float), cnn->O6->output_num, file_point);
+	fwrite(cnn->O6->basic_data, sizeof(uint8_t), cnn->O6->output_num, file_point);
+	fwrite(cnn->O6->v, sizeof(uint8_t), cnn->O6->output_num, file_point);
+	fwrite(cnn->O6->d, sizeof(uint8_t), cnn->O6->output_num, file_point);
+	fwrite(cnn->O6->y, sizeof(uint8_t), cnn->O6->output_num, file_point);
 
 	fclose(file_point);
 }

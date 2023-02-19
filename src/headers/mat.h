@@ -5,31 +5,31 @@
 #define FULL 0
 #define SAME 1
 #define VALID 2
-
+#include <stdint.h>
 typedef struct Mat2DSize
 {
 	int columns;
 	int rows;
 } MatSize;
 
-float **MatRotate180(float **mat, MatSize mat_size);
-void MatAdd(float **res, float **mat1, MatSize mat_size1, float **mat2, MatSize mat_size2);
+uint8_t **MatRotate180(uint8_t **mat, MatSize mat_size);
+void MatAdd(uint8_t **res, uint8_t **mat1, MatSize mat_size1, uint8_t **mat2, MatSize mat_size2);
 
-float **MatCorrelation(float **map, MatSize map_size, float **inputData, MatSize inSize, int type);
+uint8_t **MatCorrelation(uint8_t **map, MatSize map_size, uint8_t **inputData, MatSize inSize, int type);
 
-float **MatCov(float **map, MatSize map_size, float **inputData, MatSize inSize, int type);
+uint8_t **MatCov(uint8_t **map, MatSize map_size, uint8_t **inputData, MatSize inSize, int type);
 
-float **MatUpSample(float **mat, MatSize mat_size, int upc, int upr);
+uint8_t **MatUpSample(uint8_t **mat, MatSize mat_size, int upc, int upr);
 
-float **MatEdgeExpand(float **mat, MatSize mat_size, int addc, int addr);
+uint8_t **MatEdgeExpand(uint8_t **mat, MatSize mat_size, int addc, int addr);
 
-float **MatEdgeShrink(float **mat, MatSize mat_size, int shrinkc, int shrinkr);
+uint8_t **MatEdgeShrink(uint8_t **mat, MatSize mat_size, int shrinkc, int shrinkr);
 
-void MatSaving(float **mat, MatSize mat_size, const char *filename);
+void MatSaving(uint8_t **mat, MatSize mat_size, const char *filename);
 
-void MatMultifactor(float **res, float **mat, MatSize mat_size, float factor);
+void MatMultifactor(uint8_t **res, uint8_t **mat, MatSize mat_size, uint8_t factor);
 
-float MatSum(float **mat, MatSize mat_size);
+uint8_t MatSum(uint8_t **mat, MatSize mat_size);
 
 char *CombineStrings(char *a, char *b);
 

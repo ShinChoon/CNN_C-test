@@ -64,18 +64,18 @@ ImageArray ReadImages(const char* filename)
 	{  
 		image_array->image_point[i].number_of_rows = n_rows;     //
 		image_array->image_point[i].number_of_columns = n_columns;  //set 
-		image_array->image_point[i].image_data = (float**) malloc(n_rows * sizeof(float*));
+		image_array->image_point[i].image_data = (uint8_t**) malloc(n_rows * sizeof(uint8_t*));
 
 		for(row = 0; row < n_rows; ++row) //from 0 -> n_rows-1
 		{
-			image_array->image_point[i].image_data[row] = (float*)malloc(n_columns * sizeof(float));
+			image_array->image_point[i].image_data[row] = (uint8_t*)malloc(n_columns * sizeof(uint8_t));
 			for(column = 0; column < n_columns; ++column)  //from 0 -> n_columns-1
 			{ 
 				unsigned char temp_pixel = 0;   
 				//read a pixel 0-255 with 8-bit
 				fread((char*) &temp_pixel, sizeof(temp_pixel), 1, file_point); 
-				//Change 8-bit pixel to float. 
-				image_array->image_point[i].image_data[row][column]= (float)temp_pixel/255;
+				//Change 8-bit pixel to uint8_t. 
+				image_array->image_point[i].image_data[row][column]= (uint8_t)temp_pixel/255;
 			}
 		}
 	}
@@ -112,7 +112,7 @@ LabelArray ReadLabels(const char* filename)
 	for(i = 0; i < number_of_labels; ++i)  
 	{  
 		labarr->label_point[i].label_length = 10;
-		labarr->label_point[i].LabelData = (float*)calloc(label_long,sizeof(float));
+		labarr->label_point[i].LabelData = (uint8_t*)calloc(label_long,sizeof(uint8_t));
 		unsigned char temp = 0;  
 		fread((char*) &temp, sizeof(temp),1,file_point); 
 		labarr->label_point[i].LabelData[(int)temp] = 1.0;    
@@ -171,7 +171,7 @@ void SaveImage(ImageArray image_array,char* filedir)
 		// assert(fp);
 
 		for(r=0;r<image_array->image_point[i].number_of_rows;r++)
-			fwrite(image_array->image_point[i].image_data[r],sizeof(float),image_array->image_point[i].number_of_columns,fp);
+			fwrite(image_array->image_point[i].image_data[r],sizeof(uint8_t),image_array->image_point[i].number_of_columns,fp);
 		
 		fclose(fp);
 	}	

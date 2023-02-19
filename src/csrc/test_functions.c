@@ -21,37 +21,37 @@ void TestMat()
 	srand((unsigned)time(NULL)); 
   
 	//define and random src mat
-	float** src = (float**)malloc(srcSize.rows * sizeof(float*));
+	uint8_t** src = (uint8_t**)malloc(srcSize.rows * sizeof(uint8_t*));
 	for(int i=0; i<srcSize.rows; i++)
 	{
-		src[i] = (float*)malloc(srcSize.columns * sizeof(float));
+		src[i] = (uint8_t*)malloc(srcSize.columns * sizeof(uint8_t));
 
 		for(int j=0; j<srcSize.columns; j++)
 		{
-			//Generate float from [-1:1]
-			src[i][j] = (((float)rand() / (float)RAND_MAX)-0.5) * 2; 
+			//Generate uint8_t from [-1:1]
+			src[i][j] = (((uint8_t)rand() / (uint8_t)RAND_MAX)-0.5) * 2; 
 		}
 	}
 
   //define and random map mat
-	float** map = (float**)malloc(map_size.rows * sizeof(float*));
+	uint8_t** map = (uint8_t**)malloc(map_size.rows * sizeof(uint8_t*));
 	for(int i=0; i<map_size.rows; i++)
 	{
-		map[i] = (float*)malloc(map_size.columns * sizeof(float));
+		map[i] = (uint8_t*)malloc(map_size.columns * sizeof(uint8_t));
 
 		for(int j=0; j<map_size.columns; j++)
 		{
-			//Generate float from [-1:1]
-			map[i][j] = (((float)rand() / (float)RAND_MAX)-0.5) * 2; 
+			//Generate uint8_t from [-1:1]
+			map[i][j] = (((uint8_t)rand() / (uint8_t)RAND_MAX)-0.5) * 2; 
 		}
 	}
 
 	MatSize cov1size={srcSize.columns+map_size.columns-1,srcSize.rows+map_size.rows-1};
-	float** cov1=MatCov(map,map_size,src,srcSize,FULL);
+	uint8_t** cov1=MatCov(map,map_size,src,srcSize,FULL);
 	//MatSize cov2size={srcSize.columns,srcSize.rows};
-	//float** cov2=MatCov(map,map_size,src,srcSize,SAME);
+	//uint8_t** cov2=MatCov(map,map_size,src,srcSize,SAME);
 	MatSize cov3size={srcSize.columns-(map_size.columns-1),srcSize.rows-(map_size.rows-1)};
-	float** cov3=MatCov(map,map_size,src,srcSize,VALID);
+	uint8_t** cov3=MatCov(map,map_size,src,srcSize,VALID);
 
 	MatSaving(src,srcSize,"output/src.ma");
 	MatSaving(map,map_size,"output/map.ma");
@@ -59,7 +59,7 @@ void TestMat()
 	//MatSaving(cov2,cov2size,"output/cov2.ma");
 	MatSaving(cov3,cov3size,"output/cov3.ma");
 
-	float** sample=MatUpSample(src,srcSize,2,2);
+	uint8_t** sample=MatUpSample(src,srcSize,2,2);
 	MatSize samSize={srcSize.columns*2,srcSize.rows*2};
 	MatSaving(sample,samSize,"output/sam.ma");
 }
@@ -69,39 +69,39 @@ void TestMat1()
 	int i,j;
 	MatSize srcSize={12,12};
 	MatSize map_size={5,5};
-	float** src=(float**)malloc(srcSize.rows*sizeof(float*));
+	uint8_t** src=(uint8_t**)malloc(srcSize.rows*sizeof(uint8_t*));
 	for(i=0;i<srcSize.rows;i++){
-		src[i]=(float*)malloc(srcSize.columns*sizeof(float));
+		src[i]=(uint8_t*)malloc(srcSize.columns*sizeof(uint8_t));
 		for(j=0;j<srcSize.columns;j++){
-			src[i][j]=(((float)rand()/(float)RAND_MAX)-0.5)*2; 
+			src[i][j]=(((uint8_t)rand()/(uint8_t)RAND_MAX)-0.5)*2; 
 		}
 	}
-	float** map1=(float**)malloc(map_size.rows*sizeof(float*));
+	uint8_t** map1=(uint8_t**)malloc(map_size.rows*sizeof(uint8_t*));
 	for(i=0;i<map_size.rows;i++){
-		map1[i]=(float*)malloc(map_size.columns*sizeof(float));
+		map1[i]=(uint8_t*)malloc(map_size.columns*sizeof(uint8_t));
 		for(j=0;j<map_size.columns;j++){
-			map1[i][j]=(((float)rand()/(float)RAND_MAX)-0.5)*2; 
+			map1[i][j]=(((uint8_t)rand()/(uint8_t)RAND_MAX)-0.5)*2; 
 		}
 	}
-	float** map2=(float**)malloc(map_size.rows*sizeof(float*));
+	uint8_t** map2=(uint8_t**)malloc(map_size.rows*sizeof(uint8_t*));
 	for(i=0;i<map_size.rows;i++){
-		map2[i]=(float*)malloc(map_size.columns*sizeof(float));
+		map2[i]=(uint8_t*)malloc(map_size.columns*sizeof(uint8_t));
 		for(j=0;j<map_size.columns;j++){
-			map2[i][j]=(((float)rand()/(float)RAND_MAX)-0.5)*2; 
+			map2[i][j]=(((uint8_t)rand()/(uint8_t)RAND_MAX)-0.5)*2; 
 		}
 	}
-	float** map3=(float**)malloc(map_size.rows*sizeof(float*));
+	uint8_t** map3=(uint8_t**)malloc(map_size.rows*sizeof(uint8_t*));
 	for(i=0;i<map_size.rows;i++){
-		map3[i]=(float*)malloc(map_size.columns*sizeof(float));
+		map3[i]=(uint8_t*)malloc(map_size.columns*sizeof(uint8_t));
 		for(j=0;j<map_size.columns;j++){
-			map3[i][j]=(((float)rand()/(float)RAND_MAX)-0.5)*2; 
+			map3[i][j]=(((uint8_t)rand()/(uint8_t)RAND_MAX)-0.5)*2; 
 		}
 	}
 
-	float** cov1=MatCov(map1,map_size,src,srcSize,VALID);
-	float** cov2=MatCov(map2,map_size,src,srcSize,VALID);
+	uint8_t** cov1=MatCov(map1,map_size,src,srcSize,VALID);
+	uint8_t** cov2=MatCov(map2,map_size,src,srcSize,VALID);
 	MatSize covsize={srcSize.columns-(map_size.columns-1),srcSize.rows-(map_size.rows-1)};
-	float** cov3=MatCov(map3,map_size,src,srcSize,VALID);
+	uint8_t** cov3=MatCov(map3,map_size,src,srcSize,VALID);
 	MatAdd(cov1,cov1,covsize,cov2,covsize);
 	MatAdd(cov1,cov1,covsize,cov3,covsize);
 
@@ -146,6 +146,6 @@ void test_cnn()
 	if(file_point == NULL)
 		printf("[-] Write file failed! <output/cnn_layer.ma>\n");
 
-	fwrite(cnn->L, sizeof(float), num_train, file_point);
+	fwrite(cnn->L, sizeof(uint8_t), num_train, file_point);
 	fclose(file_point);
 }

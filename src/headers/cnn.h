@@ -2,6 +2,7 @@
 #define CNN_H_
 
 #include <stdbool.h>
+#include <stdint.h>
 #include "mat.h"
 #include "mnist.h"
 
@@ -19,17 +20,17 @@ typedef struct ConvolutionalLayer
 
 	int input_channels;
 	int output_channels;
-	float ****map_data;
-	float ****dmap_data;
+	uint8_t ****map_data;
+	uint8_t ****dmap_data;
 
-	float *basic_data;
+	uint16_t *basic_data;
 	bool is_full_connect;
 	bool *connect_model;
 
-	float ***v;
-	float ***y;
+	uint8_t ***v;
+	uint8_t ***y;
 
-	float ***d;
+	uint8_t ***d;
 } CovLayer;
 
 // Define pooling layer
@@ -43,10 +44,10 @@ typedef struct PoolingLayer
 	int output_channels;
 
 	int pooling_type;
-	float *basic_data;
+	uint8_t *basic_data;
 
-	float ***y;
-	float ***d;
+	uint8_t ***y;
+	uint8_t ***d;
 } PoolingLayer;
 
 // Define Output layer
@@ -55,12 +56,12 @@ typedef struct OutputLayer
 	int input_num;
 	int output_num;
 
-	float **wData;
-	float *basic_data;
+	uint8_t **wData;
+	uint8_t *basic_data;
 
-	float *v;
-	float *y;
-	float *d;
+	uint8_t *v;
+	uint8_t *y;
+	uint8_t *d;
 
 	bool is_full_connect;
 } OutputLayer;
@@ -76,15 +77,15 @@ typedef struct ConvolutionalNeuralNetwork
 	OutputLayer *O5;  // Output Layer5
 	OutputLayer *O6;  // Output Layer5
 
-	float *e;
-	float *L;
+	uint8_t *e;
+	uint8_t *L;
 } Cnn;
 
 // Train Options
 typedef struct TrainOptions
 {
 	int numepochs;
-	float alpha;
+	uint8_t alpha;
 } TrainOptions;
 
 void CnnSetup(Cnn *cnn, MatSize inputSize, int outputSize);
@@ -92,7 +93,7 @@ void CnnSetup(Cnn *cnn, MatSize inputSize, int outputSize);
 void CnnTrain(Cnn *cnn, ImageArray inputData, LabelArray outputData,
 			  TrainOptions opts, int trainNum);
 
-float CnnTest(Cnn *cnn, ImageArray inputData, LabelArray outputData, int testNum);
+uint8_t CnnTest(Cnn *cnn, ImageArray inputData, LabelArray outputData, int testNum);
 
 void SaveCnn(Cnn *cnn, const char *filename);
 
@@ -108,22 +109,22 @@ void PoolingLayerConnect(PoolingLayer *poolL, bool *connect_model);
 
 OutputLayer *InitOutputLayer(int input_num, int output_num);
 
-float ActivationSigma(float input, float bas);
-float ActivationReLu(float input, float bas);
+uint8_t ActivationSigma(uint8_t input, uint8_t bas);
+uint8_t ActivationReLu(uint8_t input, uint16_t bas);
 
-void CnnFF(Cnn *cnn, float **inputData);
-void CnnBP(Cnn *cnn, float *outputData);
-void CnnApplyGrads(Cnn *cnn, TrainOptions opts, float **inputData);
+void CnnFF(Cnn *cnn, uint8_t **inputData);
+void CnnBP(Cnn *cnn, uint8_t *outputData);
+void CnnApplyGrads(Cnn *cnn, TrainOptions opts, uint8_t **inputData);
 void CnnClear(Cnn *cnn);
 
-void AvgPooling(float **output, MatSize outputSize, float **input,
+void AvgPooling(uint8_t **output, MatSize outputSize, uint8_t **input,
 				MatSize inputSize, int map_size);
 
-void MaxPooling(float **output, MatSize outputSize, float **input,
+void MaxPooling(uint8_t **output, MatSize outputSize, uint8_t **input,
 				MatSize inputSize, int map_size);
 
-void nnff(float *output, float *input, float **wdata, float *bas, MatSize nnSize);
+void nnff(uint8_t *output, uint8_t *input, uint8_t **wdata, uint8_t *bas, MatSize nnSize);
 
-void SaveCnnData(Cnn *cnn, const char *filename, float **inputdata);
+void SaveCnnData(Cnn *cnn, const char *filename, uint8_t **inputdata);
 
 #endif

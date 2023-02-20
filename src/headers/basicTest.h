@@ -3,7 +3,6 @@
 #define IMCrow 36
 #define IMCcol 32
 #include <stdlib.h>
-#include <stdint.h>
 #include "cnn.h"
 
 typedef struct VMMStructure
@@ -19,10 +18,8 @@ struct weight_map
     uint8_t weights[4][9];
 };
 
-void _CovSetup(Cnn *cnn, MatSize input_size, int output_size);
-void _PoolSetup(Cnn *cnn, MatSize input_size, int output_size);
 VMM *initializeVMM(Cnn *cnn);
-uint16_t *bias_mapping(CovLayer *cc, int *bias_number);
+uint8_t *bias_mapping(CovLayer *cc);
 uint8_t ***weights_mapping(CovLayer *cc, int *weights_number, int Scaling);
 void inputs_mapping(CovLayer *cc, MnistImage **images, uint8_t ***maplist, int *VMM_turns, int scaling, int part_index);
 void assign_to_sub_array(uint8_t ***maplist, uint8_t *temp_input, int size_xx, int count_y, int scal);
@@ -31,10 +28,8 @@ uint8_t ***generate_result_array();
 
 void freeConvLayer(CovLayer *cnn);
 void freePoolLayer(PoolingLayer *pol);
-void free_input_array(uint8_t ***result_array);
-void free_result_array(uint8_t ***result_array);
 
-void _CnnFF(CovLayer *conv_layer, PoolingLayer *pool_layer);
+void _CnnFF(CovLayer *conv_layer, PoolingLayer *pool_layer, uint8_t *bias_array);
 void _CnnSetup(Cnn *cnn, MatSize input_size, int output_size);
 void _ImportCnn(Cnn *cnn);
 ImageArray _ReadImages(const char *filename);
@@ -50,6 +45,10 @@ void write_data(char *address, char *data);
 void _VMMMACoperation(uint8_t ***result_list, int pagenumber, int Scaling);
 
 MnistImage *Output_image(int cols, int rows, uint8_t **imagedata);
+void _free_3darray(int ***data, size_t xlen, size_t ylen);
+uint8_t ***_alloc_3darray(size_t xlen, size_t ylen, size_t zlen);
+uint8_t **_alloc_2darray(size_t xlen, size_t ylen);
+uint8_t *_alloc_1darray(size_t xlen);
 
-
+// statically initialize some data in .data section
 #endif

@@ -1,7 +1,7 @@
 #include <stdio.h>
-#include <stdint.h>
 #include <math.h>
 #include <inttypes.h>
+#include <stdint.h>
 #include "basicTest.h"
 
 #ifdef ACORE
@@ -18,88 +18,6 @@
 #define OUTPUT_ADC_READY A_CORE_AXI4LVMM + 0x08
 #define OUTPUT_ADC A_CORE_AXI4LVMM + 0x0C
 #endif
-
-uint8_t C1_y[28][28] = {
-    {31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31},
-    {31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31},
-    {31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31},
-    {31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31},
-    {31, 31, 31, 31, 31, 32, 31, 34, 31, 33, 31, 32, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31},
-    {31, 31, 31, 31, 31, 33, 31, 42, 31, 43, 31, 38, 31, 35, 31, 35, 31, 35, 31, 35, 31, 32, 31, 31, 31, 31, 31, 31},
-    {31, 31, 31, 31, 31, 33, 33, 51, 34, 52, 33, 49, 31, 45, 31, 45, 31, 45, 31, 45, 31, 38, 31, 31, 31, 31, 31, 31},
-    {31, 31, 31, 31, 31, 34, 36, 48, 44, 49, 41, 54, 36, 54, 35, 55, 35, 54, 35, 56, 34, 47, 31, 31, 31, 31, 31, 31},
-    {31, 31, 31, 31, 31, 32, 41, 36, 54, 37, 51, 43, 46, 47, 45, 48, 45, 48, 45, 54, 43, 49, 33, 31, 31, 31, 31, 31},
-    {31, 31, 31, 31, 31, 31, 40, 31, 49, 31, 51, 32, 54, 34, 54, 35, 55, 36, 55, 50, 55, 45, 36, 31, 31, 31, 31, 31},
-    {31, 31, 31, 31, 31, 31, 34, 31, 37, 31, 40, 31, 46, 31, 46, 31, 48, 35, 49, 54, 58, 39, 37, 31, 31, 31, 31, 31},
-    {31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 33, 31, 33, 32, 35, 41, 41, 56, 55, 34, 34, 31, 31, 31, 31, 31},
-    {31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 32, 32, 47, 45, 51, 51, 32, 31, 31, 31, 31, 31, 31},
-    {31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 34, 34, 52, 51, 43, 46, 31, 31, 31, 31, 31, 31, 31},
-    {31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 36, 37, 54, 56, 37, 39, 31, 31, 31, 31, 31, 31, 31},
-    {31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 32, 31, 40, 41, 53, 54, 32, 33, 31, 31, 31, 31, 31, 31, 31},
-    {31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 33, 32, 48, 45, 49, 49, 31, 31, 31, 31, 31, 31, 31, 31, 31},
-    {31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 36, 34, 54, 50, 42, 43, 31, 31, 31, 31, 31, 31, 31, 31, 31},
-    {31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 42, 38, 56, 54, 36, 37, 31, 31, 31, 31, 31, 31, 31, 31, 31},
-    {31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 33, 33, 48, 45, 50, 53, 32, 32, 31, 31, 31, 31, 31, 31, 31, 31, 31},
-    {31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 35, 34, 54, 52, 42, 47, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31},
-    {31, 31, 31, 31, 31, 31, 31, 31, 31, 32, 31, 41, 38, 57, 57, 35, 39, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31},
-    {31, 31, 31, 31, 31, 31, 31, 31, 31, 32, 32, 48, 45, 57, 53, 34, 33, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31},
-    {31, 31, 31, 31, 31, 31, 31, 31, 31, 33, 34, 52, 53, 55, 48, 33, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31},
-    {31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 37, 31, 58, 31, 47, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31},
-    {31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 41, 31, 59, 31, 44, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31},
-    {31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 39, 31, 55, 31, 38, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31},
-    {31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 36, 31, 42, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31}};
-
-// #define CONVERT_INT8_FLOAT(X) (float)_I2F_LUT[X]
-// #define CONVERT_FLOAT_INT8(x, isweight) (isweight ? (x > 0 ? ((int)(abs(x / 0.015625)) + 64) : ((int)(abs(x / 0.015625)) + 128)) : ((int)(abs(x / 0.015625))))
-
-// // statically initialize some data in .data section
-// const float _I2F_LUT[64] = {
-//     -3.9375, -3.8125, -3.6875, -3.5625,
-//     -3.4375, -3.3125, -3.1875, -3.0625,
-//     -2.9375, -2.8125, -2.6875, -2.5625,
-//     -2.4375, -2.3125, -2.1875, -2.0625,
-//     -1.9375, -1.8125, -1.6875, -1.5625,
-//     -1.4375, -1.3125, -1.1875, -1.0625,
-//     -0.9375, -0.8125, -0.6875, -0.5625,
-//     -0.4375, -0.3125, -0.1875, -0.0625,
-//     0.0625, 0.1875, 0.3125, 0.4375,
-//     0.5625, 0.6875, 0.8125, 0.9375,
-//     1.0625, 1.1875, 1.3125, 1.4375,
-//     1.5625, 1.6875, 1.8125, 1.9375,
-//     2.0625, 2.1875, 2.3125, 2.4375,
-//     2.5625, 2.6875, 2.8125, 2.9375,
-//     3.0625, 3.1875, 3.3125, 3.4375,
-//     3.5625, 3.6875, 3.8125, 3.9375};
-
-// int convert_float_int8(float number, int isweight)
-// {
-//     /*simplified steps to conver uint8_t into int8*/
-//     int answer_in = 0;
-//     float base = 0.015625; // pow(2,-6)
-//     answer_in = (int)((number) / base);
-//     if (answer_in < 0)
-//     {
-//         answer_in *= -1;
-//     }
-//     if (isweight)
-//     {
-//         if (number > 0)
-//             answer_in += 64; // pow(2,6)
-//         if (number < 0)
-//             answer_in += 128; // pow(2,7)
-//     }
-//     return answer_in;
-// }
-
-// int convert_int8_float(int feed)
-// {
-//     /*decode the numbers from int8 to uint8_t, skipping binary string part*/
-//     float number = 0;
-//     int answer_in = 0;
-//     number = feed * 0.125 - 4 + 0.0625; // *pow(2, -3) - 4 + pow(2, -3);
-//     answer_in = number * 10000;
-//     return answer_in;
-// }
 
 #ifdef ACORE
 void write(int address, uint8_t data)
@@ -159,48 +77,135 @@ void FeedVMM_weights(uint8_t ***weight_array, int VMM_turns, int Scaling)
 {
     int page_weight = 0;
     int index_weight = 0;
-    int number = 0;
     uint8_t feed = 0; // do not change this please
     for (int i = 2 * IMCrow; i < (IMCrow - 2) * IMCrow; i++)
     {
         page_weight = (int)(i / IMCrow) - 2;
         index_weight = i % IMCrow;
         feed = weight_array[0][page_weight][index_weight];
-        number = feed;
 #ifdef ACORE
-        write(i, number);
+        write(i, feed);
 #endif
     }
 }
 
 void FeedVMM_image(uint8_t ***VMMarray, int pagenumber, int Scaling)
 {
-    int number = 0;
     uint8_t feed = 0;
     for (int sc = 0; sc < Scaling; sc++)
     {
         for (int i = 0; i < IMCrow; i++)
         {
             feed = VMMarray[0][pagenumber][i];
-            number = feed;
 #ifdef ACORE
-            write(i, number);
+            write(i, feed);
 #endif
         }
     }
 }
 void VMMMACoperation(uint8_t ***result_list, int pagenumber, int Scaling)
 {
-    int result = 0;
+    uint8_t result = 0;
     for (int h = 0; h < IMCcol; h++)
     {
-#ifdef ACORE
-        result = (int)read(h);
-        result_list[0][pagenumber][h] = (uint8_t)result;
-#endif
-        // printf("%d ", result);
+        result = (uint8_t)read(h);
+        result_list[0][pagenumber][h] = result;
+        // printf("%d ", (int)(result_list[0][pagenumber][h]));
     }
     // printf("\n");
+}
+
+void free_data(int ***data, size_t xlen, size_t ylen)
+{
+    size_t i, j;
+
+    for (i = 0; i < xlen; ++i)
+    {
+        if (data[i] != NULL)
+        {
+            for (j = 0; j < ylen; ++j)
+                free(data[i][j]);
+            free(data[i]);
+        }
+    }
+    free(data);
+}
+
+uint8_t ***alloc_3darray(size_t xlen, size_t ylen, size_t zlen)
+{
+    uint8_t ***p;
+    size_t i, j;
+
+    if ((p = malloc(xlen * sizeof *p)) == NULL)
+    {
+        perror("malloc 1");
+        return NULL;
+    }
+
+    for (i = 0; i < xlen; ++i)
+        p[i] = NULL;
+
+    for (i = 0; i < xlen; ++i)
+        if ((p[i] = malloc(ylen * sizeof *p[i])) == NULL)
+        {
+            perror("malloc 2");
+            free_data(p, xlen, ylen);
+            return NULL;
+        }
+
+    for (i = 0; i < xlen; ++i)
+        for (j = 0; j < ylen; ++j)
+            p[i][j] = NULL;
+
+    for (i = 0; i < xlen; ++i)
+        for (j = 0; j < ylen; ++j)
+            if ((p[i][j] = malloc(zlen * sizeof *p[i][j])) == NULL)
+            {
+                perror("malloc 3");
+                free_data(p, xlen, ylen);
+                return NULL;
+            }
+
+    return p;
+}
+
+uint8_t **alloc_2darray(size_t xlen, size_t ylen)
+{
+    uint8_t **p;
+    size_t i, j;
+
+    if ((p = malloc(xlen * sizeof *p)) == NULL)
+    {
+        perror("malloc 1");
+        return NULL;
+    }
+
+    for (i = 0; i < xlen; ++i)
+        p[i] = NULL;
+
+    for (i = 0; i < xlen; ++i)
+        if ((p[i] = malloc(ylen * sizeof *p[i])) == NULL)
+        {
+            perror("malloc 2");
+            free_data(p, xlen, ylen);
+            return NULL;
+        }
+
+    return p;
+}
+
+uint8_t *alloc_1darray(size_t xlen)
+{
+    uint8_t *p;
+    size_t i, j;
+
+    if ((p = malloc(xlen * sizeof *p)) == NULL)
+    {
+        perror("malloc 1");
+        return NULL;
+    }
+
+    return p;
 }
 
 void main()
@@ -229,9 +234,9 @@ void main()
     _CnnSetup(cnn, input_size, output_size);
     printf("[+] CNN setup finished!\n");
 
-    // // // // // /*load weights from csv file, not needed anymore*/
-    // // // // _ImportCnn(cnn);
-    // // // // printf("[+] Import CNN finished!\n");
+    // /*load weights from csv file, not needed anymore*/
+    // _ImportCnn(cnn);
+    // printf("[+] Import CNN finished!\n");
 
     /*map weigths and iamge as in IMC shape*/
 
@@ -239,30 +244,22 @@ void main()
     int weights_number = 0;
     int bias_number = 0;
     int page_image = 0;
+    int result = 0;
     int h = 0;
     int temp = 0;
+
 #ifdef ACORE
-    uint8_t ***result_list = generate_result_array();
-// uint8_t ***result_list;
-// result_list = malloc(sizeof(*result_list) * 1);
-// result_list[0] = malloc(sizeof(*result_list[0]) * 28);
-// for (int i = 0; i < 28; i++)
-// result_list[0][i] = malloc(sizeof(*result_list[0][i]) * IMCcol);
+    // uint8_t ***result_list = generate_result_array();
+    uint8_t ***result_list = alloc_3darray(1, 28, IMCcol);
 #endif
 
     uint8_t ***weight_array = weights_mapping(cnn->C1, &weights_number, 1);
-    uint16_t *bias_array = bias_mapping(cnn->C1, &bias_number);
+    uint8_t *bias_array = bias_mapping(cnn->C1);
     int turn_number = 0;
     int column_dex = 0;
 
     MnistImage *input_list[] = {&(test_images->image_point[0])};
-    // uint8_t ***VMM_input_array = generate_input_array();
-    uint8_t ***VMM_input_array;
-    VMM_input_array = malloc(sizeof(*VMM_input_array) * 1);
-    VMM_input_array[0] = malloc(sizeof(*VMM_input_array[0]) * 28);
-    for (int i = 0; i < 28; i++)
-        VMM_input_array[0][i] = malloc(sizeof(*VMM_input_array[0][i]) * IMCrow);
-
+    uint8_t ***VMM_input_array = alloc_3darray(1, 28, IMCrow);
 /*VMM R/W*/
 #ifdef ACORE
     reset_VMM(); // printf and byte transmit
@@ -286,30 +283,35 @@ void main()
         printf("@@@@finish mapping\n");
         /*image making values*/
         /*weights*/
-        #ifdef ACORE
+
+#ifndef DEBUG
         for (page_image = 0; page_image < 28; page_image++)
         {
-
             printf("writing image\n");
             FeedVMM_image(VMM_input_array, page_image, 1);
-            printf("reading!\n");
+#ifdef ACORE
+            printf("reading\n");
             VMMMACoperation(result_list, page_image, 1);
+#endif
         }
-        #else
-            uint8_t ***result_list = vmm->MACoperation(VMM_input_array, weight_array, 28, 1);
-        #endif
+#endif
+
+#ifndef ACORE
+        uint8_t ***result_list = vmm->MACoperation(VMM_input_array, weight_array, 28, 1);
+#endif
+
+        printf("@@@@@@@@@@@@@Convimage: %d\n", VMM_turns);
         Conv_image(cnn->C1, 28, result_list, VMM_turns, weights_number, 1, &column_dex);
     }
 
-    // free_input_array(VMM_input_array);
-    // free_result_array(result_list);
-
-    save_image(28, cnn->C1->v[0]);
-
-    // freeConvLayer(cnn->C1);
-    // freePoolLayer(cnn->S2);
-    // printf("free cnn!\n");
-    // free(cnn);
+    printf("save image!!\n");
+    _CnnFF(cnn->C1, cnn->S2, bias_array);
+    for (int ch_i = 0; ch_i < cnn->S2->output_channels; ch_i++)
+    {
+        save_image(14, cnn->S2->y[ch_i]);
+        printf("\n");
+        printf("\n");
+    }
 
 #ifdef ACORE
     test_pass();

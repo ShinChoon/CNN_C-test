@@ -10,13 +10,14 @@
 #include "basicTest.h"
 #include "imagedata.h"
 #include "weights_bias.h"
+#include "vmm.h"
 
 #define offset 0X3000100 //?
 #define tx_status_adr 0x30001008
 #define address_bus 0x30001004
 #define info_bus 0x30001004
 
-void _CnnSetup(Cnn *cnn, MatSize input_size, int output_size)
+void _CnnSetup(Cnn *cnn, MatSize input_size, int output_size, int i)
 {
     int map_size = 3;
     cnn->layer_num = 5; // layers = 5
@@ -31,8 +32,9 @@ void _CnnSetup(Cnn *cnn, MatSize input_size, int output_size)
     printf("temp_input_size col: %d\n", temp_input_size.columns);
     printf("temp_input_size rows: %d\n", temp_input_size.rows);
 
-    cnn->C1 = InitialCovLayer(temp_input_size.columns,
-                              temp_input_size.rows, map_size, 1, 4, VALID);
+    if(i==1)
+        cnn->C1 = InitialCovLayer(temp_input_size.columns,
+                                  temp_input_size.rows, map_size, 1, 4, VALID);
 
     // Layer2 Pooling input size: {28,28}
     temp_input_size.columns = temp_input_size.columns - map_size + 1;
@@ -40,28 +42,32 @@ void _CnnSetup(Cnn *cnn, MatSize input_size, int output_size)
     printf("temp_input_size col: %d\n", temp_input_size.columns);
     printf("temp_input_size rows: %d\n", temp_input_size.rows);
 
-    cnn->S2 = InitialPoolingLayer(temp_input_size.columns,
-                                  temp_input_size.rows, pool_scale, 4, 4, MAX_POOLING);
+    if (i == 1)
+        cnn->S2 = InitialPoolingLayer(temp_input_size.columns,
+                                      temp_input_size.rows, pool_scale, 4, 4, MAX_POOLING);
 
-    // // Layer3 Cov input size: {14,14}
-    // temp_input_size.columns = temp_input_size.columns / 2;
-    // temp_input_size.rows = temp_input_size.rows / 2;
-    // printf("temp_input_size col: %d\n", temp_input_size.columns);
-    // printf("temp_input_size rows: %d\n", temp_input_size.rows);
+    // Layer3 Cov input size: {14,14}
+    temp_input_size.columns = temp_input_size.columns / 2;
+    temp_input_size.rows = temp_input_size.rows / 2;
+    printf("temp_input_size col: %d\n", temp_input_size.columns);
+    printf("temp_input_size rows: %d\n", temp_input_size.rows);
 
-    // cnn->C3 = InitialCovLayer(temp_input_size.columns,
-    //                           temp_input_size.rows, map_size, 4, 8, VALID);
+    if (i == 2)
+        cnn->C3 = InitialCovLayer(temp_input_size.columns,
+                                  temp_input_size.rows, map_size, 4, 8, VALID);
 
-    // // Layer4 Pooling with average. Input size: {12,12}
-    // temp_input_size.columns = temp_input_size.columns - map_size + 1;
-    // temp_input_size.rows = temp_input_size.rows - map_size + 1;
-    // printf("temp_input_size col: %d\n", temp_input_size.columns);
-    // printf("temp_input_size rows: %d\n", temp_input_size.rows);
-    // cnn->S4 = InitialPoolingLayer(temp_input_size.columns,
-    //                               temp_input_size.rows, pool_scale, 8, 8, MAX_POOLING);
+    // Layer4 Pooling with average. Input size: {12,12}
+    temp_input_size.columns = temp_input_size.columns - map_size + 1;
+    temp_input_size.rows = temp_input_size.rows - map_size + 1;
+    printf("temp_input_size col: %d\n", temp_input_size.columns);
+    printf("temp_input_size rows: %d\n", temp_input_size.rows);
+    if (i == 2)
+        cnn->S4 = InitialPoolingLayer(temp_input_size.columns,
+                                      temp_input_size.rows, pool_scale, 8, 8, MAX_POOLING);
 }
 
-void _CnnFF(CovLayer *conv_layer, PoolingLayer *pool_layer, uint8_t *bias_array)
+
+void _CnnFF(CovLayer *conv_layer, PoolingLayer *pool_layer)
 /*
     1st Activation + Pooling
 */
@@ -72,19 +78,22 @@ void _CnnFF(CovLayer *conv_layer, PoolingLayer *pool_layer, uint8_t *bias_array)
     // int output_sizeW = pool_layer->input_width;
     // int output_sizeH = pool_layer->input_height;
 
-    /*convolution result is conv_layer->v*/
-    for (int i = 0; i < (conv_layer->output_channels); i++)
-    {
-        /*Activation function with params of weighted input and bias*/
-        for (int row = 0; row < output_size.rows; row++)
-        {
-            for (int col = 0; col < output_size.columns; col++)
-            {
-                conv_layer->y[i][row][col] = ActivationReLu(conv_layer->v[i][row][col],
-                                                            bias_array[i]);
-            }
-        }
-    }
+    printf("do activation in cnff\n");
+    // /*convolution result is conv_layer->v*/
+    // for (int i = 0; i < (conv_layer->output_channels); i++)
+    // {
+    //     /*Activation function with params of weighted input and bias*/
+    //     for (int row = 0; row < output_size.rows; row++)
+    //     {
+    //         for (int col = 0; col < output_size.columns; col++)
+    //         {
+    //             conv_layer->y[i][row][col] = ActivationReLu(conv_layer->v[i][row][col],
+    //                                                         conv_layer->basic_data[i]);
+    //         }
+    //     }
+    // }
+
+    printf("do pooöing in cnff!\n");
     output_size.columns = pool_layer->input_width / 2;
     output_size.rows = pool_layer->input_height / 2;
     input_size.columns = pool_layer->input_width;
@@ -92,10 +101,10 @@ void _CnnFF(CovLayer *conv_layer, PoolingLayer *pool_layer, uint8_t *bias_array)
     for (int i = 0; i < (pool_layer->output_channels); i++)
     {
         if (pool_layer->pooling_type == AVG_POOLING)
-            AvgPooling(pool_layer->y[i], output_size, conv_layer->y[i],
+            AvgPooling(pool_layer->y[i], output_size, conv_layer->v[i],
                        input_size, pool_layer->map_size);
         else if (pool_layer->pooling_type == MAX_POOLING)
-            MaxPooling(pool_layer->y[i], output_size, conv_layer->y[i],
+            MaxPooling(pool_layer->y[i], output_size, conv_layer->v[i],
                        input_size, pool_layer->map_size);
     }
 }
@@ -147,19 +156,7 @@ ImageArray _ReadImages(const char *filename)
     return image_array;
 }
 
-uint8_t *bias_mapping(CovLayer *cc)
-{
-    printf("below is bias map\n");
-    uint8_t *VMM_bias_map;
-    VMM_bias_map = _alloc_1darray(cc->output_channels);
-    for (int i = 0; i < cc->output_channels; i++)
-    {
-        VMM_bias_map[i] = bias_1[i];
-    }
-    return VMM_bias_map;
-}
-
-uint8_t ***weights_mapping(CovLayer *cc, int *weights_number, int scaling)
+void weights_mapping(CovLayer *cc, uint8_t ***VMM_weights_map, int *weights_number, int scaling)
 /*
     mapping weights into 32*36 matrix
     param cc: convLayer for current layer
@@ -173,7 +170,6 @@ uint8_t ***weights_mapping(CovLayer *cc, int *weights_number, int scaling)
     // printf("outputchannel: %d\n", cc->output_channels);
 
     /*convert 2D map to 1D, memory acclocate space*/
-    uint8_t ***VMM_weights_map = _alloc_3darray(scaling, IMCcol, IMCrow);
 
     int input_channels = cc->input_channels;
     int output_channels = cc->output_channels;
@@ -192,7 +188,7 @@ uint8_t ***weights_mapping(CovLayer *cc, int *weights_number, int scaling)
             {
                 for (int y = 0; y < 3; y++)
                 {
-                    map_array[j][i][k2] = weights_map_1[j][i][x][y];
+                    map_array[j][i][k2] = cc->map_data[j][i][x][y];
                     k2++;
                 }
             }
@@ -262,11 +258,10 @@ uint8_t ***weights_mapping(CovLayer *cc, int *weights_number, int scaling)
         if (((i + 1) % output_channels == 0) && (i > 1))
             (*weights_number)++;
     }
-
-    return VMM_weights_map;
 }
 
-void inputs_mapping(CovLayer *cc, MnistImage **images, uint8_t ***maplist, int *VMM_turns, int scaling, int part_index)
+void inputs_mapping(CovLayer *cc, MnistImage **images, uint8_t ***maplist, int *VMM_turns, 
+                    int scaling, int part_index, int scal_index)
 /*Create 9x1 lines of image data and concatenate lines into 2D array*/
 /*
     param images: image list
@@ -277,8 +272,8 @@ void inputs_mapping(CovLayer *cc, MnistImage **images, uint8_t ***maplist, int *
 */
 {
     MatSize temp_input_size;
-    temp_input_size.columns = 30;
-    temp_input_size.rows = 30;
+    temp_input_size.columns = cc->input_width;
+    temp_input_size.rows = cc->input_height;
 
     // printf("below is image map\n");
 
@@ -316,7 +311,7 @@ void inputs_mapping(CovLayer *cc, MnistImage **images, uint8_t ***maplist, int *
                          (c < d + 3) && (c < temp_input_size.rows); c++) // index by y direction in one vmm page[(0, 1, 2):[3, 3, 3]:(25, 26, 27)]
                     {
                         /*collect image data into input array*/
-                        for (int ch = 0; ch < cc->input_channels / scaling; ch++)
+                        for (int ch = 0 + scal_index*2; ch < cc->input_channels / scaling + scal_index*2; ch++)
                         {
                             VMM_input[count_x] = images[ch]->image_data[r][c];
                             count_x++;
@@ -324,7 +319,6 @@ void inputs_mapping(CovLayer *cc, MnistImage **images, uint8_t ***maplist, int *
 
                         // printf("index_VMM_input: %d\n", index_VMM_input);
                         index_VMM_input = index_VMM_input + cc->input_channels / scaling;
-                        // printf("index_VMM_input: %d\n", index_VMM_input);
 
                         if (index_VMM_input > IMCrow)
                         {
@@ -335,7 +329,15 @@ void inputs_mapping(CovLayer *cc, MnistImage **images, uint8_t ***maplist, int *
                                 count_x = 0;
                                 assign_to_sub_array(maplist, VMM_input, size_xx, count_y, scal);
 
+                                if ((count_y % ((part_index + 1) * 28) == 0) && (count_y > (part_index * 28)))
+                                {
+                                    *VMM_turns = count_y;
+                                    /*use this  as a range swtich!*/
+                                    printf("part_index: %d\n", part_index);
+                                    return 0;
+                                }
                                 count_y++;
+
                             }
                             else
                             {
@@ -356,15 +358,25 @@ void inputs_mapping(CovLayer *cc, MnistImage **images, uint8_t ***maplist, int *
 
                                 /*store the new input array into list*/
                                 count_y++;
+
+                                if ((count_y % ((part_index + 1) * 28) == 0) && (count_y > (part_index * 28)))
+                                {
+                                    *VMM_turns = count_y;
+                                    /*use this  as a range swtich!*/
+                                    printf("part_index: %d\n", part_index);
+                                    return 0;
+                                }
+
                                 assign_to_sub_array(maplist, temp_input, size_xx, count_y, scal);
                                 /*go to next line*/
                                 count_y++;
-                            }
-                            if ((count_y % ((part_index + 1) * 28) == 0) && (count_y > (part_index * 28)))
-                            {
-                                *VMM_turns = count_y;
-                                /*use this  as a range swtich!*/
-                                return 0;
+                                if ((count_y % ((part_index + 1) * 28) == 0) && (count_y > (part_index * 28)))
+                                {
+                                    *VMM_turns = count_y;
+                                    /*use this  as a range swtich!*/
+                                    printf("part_index: %d\n", part_index);
+                                    return 0;
+                                }
                             }
                         }
                     }
@@ -398,25 +410,47 @@ const char *getfield(char *line, int num)
     return tok;
 }
 
-void _ImportCnn(Cnn *cnn)
+void _ImportCnn(Cnn *cnn, int i)
 // import cnn from header file
 {
-    for (int i = 0; i < cnn->C1->output_channels; i++)
-        for (int j = 0; j < cnn->C1->input_channels; j++)
-        {
-            for (int r = 0; r < cnn->C1->map_size; r++)
+    if (i==1)
+    {
+        for (int i = 0; i < cnn->C1->output_channels; i++)
+            for (int j = 0; j < cnn->C1->input_channels; j++)
             {
-                for (int c = 0; c < cnn->C1->map_size; c++)
+                for (int r = 0; r < cnn->C1->map_size; r++)
                 {
-                    cnn->C1->map_data[i][j][r][c] = weights_map_1[i][j][r][c];
+                    for (int c = 0; c < cnn->C1->map_size; c++)
+                    {
+                        cnn->C1->map_data[i][j][r][c] = weights_map_1[i][j][r][c];
+                    }
                 }
             }
-        }
 
-    for (int ch = 0; ch < cnn->C1->output_channels; ch++)
-    {
-        cnn->C1->basic_data[ch] = bias_1[ch];
+        for (int ch = 0; ch < cnn->C1->output_channels; ch++)
+        {
+            cnn->C1->basic_data[ch] = bias_1[ch];
+        }
     }
+    else
+        {
+            for (int i = 0; i < cnn->C3->output_channels; i++)
+                for (int j = 0; j < cnn->C3->input_channels; j++)
+                {
+                    for (int r = 0; r < cnn->C3->map_size; r++)
+                    {
+                        for (int c = 0; c < cnn->C3->map_size; c++)
+                        {
+                            cnn->C3->map_data[i][j][r][c] = weights_map_2[i][j][r][c];
+                        }
+                    }
+                }
+
+            for (int ch = 0; ch < cnn->C3->output_channels; ch++)
+            {
+                cnn->C3->basic_data[ch] = bias_2[ch];
+            }
+        }
 }
 
 void assign_to_sub_array(uint8_t ***maplist, uint8_t *temp_input, int size_xx, int count_y, int scal)
@@ -449,14 +483,48 @@ void load_bias(CovLayer *cc, uint8_t *bias)
     }
 }
 
-MnistImage *Output_image(int cols, int rows, uint8_t **imagedata)
+ImageArray Output_image(int cols, int rows, uint8_t ***image_data, int number)
 /*convert output into MnistImage structure*/
 {
+    // Read images from file with file_point
+
+    int number_of_images = number; // Images' number
+    int n_rows = rows; // number of rows of an image<image hight>
+    int n_columns = cols; // number of cols of an image<image width>
     MnistImage *imagemodel = malloc(sizeof(*imagemodel));
-    imagemodel->image_data = imagedata;
     imagemodel->number_of_columns = cols;
     imagemodel->number_of_rows = rows;
-    return imagemodel;
+
+    // uint8_t zero_pixel = 0;
+    uint8_t temp_pixel = 0;
+    ImageArray image_array = malloc(sizeof(*image_array));
+
+    // define strutrue of image array
+    image_array->number_of_images = number_of_images; // number of images
+    // array of all images.
+    image_array->image_point = malloc(number_of_images * sizeof(*(image_array->image_point)));
+
+    for (int i = 0; i < number_of_images; ++i) // Images from 0 -> number_of_images-1
+    {
+        image_array->image_point[i].number_of_rows = n_rows;
+        image_array->image_point[i].number_of_columns = n_columns; // set
+        image_array->image_point[i].image_data = malloc((n_rows) * sizeof(*(image_array->image_point[i].image_data)));
+
+        /*from 0 -> Nth rows*/
+        for (int row = 0; row < n_rows; ++row)
+        {
+            image_array->image_point[i].image_data[row] = malloc((n_columns) * sizeof((image_array->image_point[i].image_data[row]))); // expanding to 30
+            for (int column = 0; column < n_columns; ++column)                                                                             // from 0 -> n_columns
+            {
+                // read a pixel 0-255 with 8-bit
+                temp_pixel = (uint8_t)image_data[i][row][column];
+                // Change 8-bit pixel to uint8_t.
+                image_array->image_point[i].image_data[row][column] = (uint8_t)temp_pixel;
+            }
+        }
+    }
+
+    return image_array;
 }
 
 VMM *initializeVMM(Cnn *cnn)
@@ -470,14 +538,17 @@ VMM *initializeVMM(Cnn *cnn)
     return vmm;
 }
 
-uint8_t ***MACoperation(uint8_t ***input_array, uint8_t ***weight_array, int VMM_turns, int scaling)
+void MACoperation(uint8_t ***input_array, uint8_t ***output_array, uint8_t ***weight_array,
+                  int page_image, int scaling)
 {
+    float fweight = 0;
+    float fimage = 0;
+    uint8_t uweight = 0;
+    uint8_t uimage = 0;
+    float dotproduct = 0;
     /*input array [78][36] weight_array[32][36]*/
-    uint8_t ***output_array = _alloc_3darray(scaling, VMM_turns, IMCcol);
     for (int sc = 0; sc < scaling; sc++)
     {
-        for (int i = 0; i < VMM_turns; i++)
-        {
             // printf("calculate %d \n", i);
             for (int h = 0; h < IMCcol; h++)
             /*loop for 32 times in each column*/
@@ -486,10 +557,14 @@ uint8_t ***MACoperation(uint8_t ***input_array, uint8_t ***weight_array, int VMM
                 for (int d = 0; d < IMCrow; d++)
                 /*loop for 36 times in each row*/
                 {
-                    output_array[sc][i][h] += input_array[sc][i][d] * weight_array[sc][h][d];
+                    fweight = bin_float_for_image_weights(weight_array[sc][h][d], 1);
+                    fimage = bin_float_for_image_weights(input_array[sc][page_image][d], 0);
+
+                    dotproduct += fweight * fimage;
                 }
+                output_array[sc][page_image][h] = float_bin_for_bias_result(dotproduct);
+                dotproduct = 0;
             }
-        }
     }
 
     // /*create file for test*/
@@ -510,7 +585,7 @@ uint8_t ***MACoperation(uint8_t ***input_array, uint8_t ***weight_array, int VMM
     // for (int d = 0; d < VMM_turns; d++)
     // {
     //     for (int r = 0; r < IMCcol; r++)
-    //         printf("%f  ", output_array[d][r]);
+    //         printf("%d  ", output_array[0][d][r]);
     //     printf("\n");
     // }
 
@@ -520,7 +595,8 @@ uint8_t ***MACoperation(uint8_t ***input_array, uint8_t ***weight_array, int VMM
 void Conv_image(CovLayer *conv_layer, int input_width, uint8_t ***input_array,
                 int VMM_turns, int weights_number, int scaling, int *column_index)
 {
-    int channels_number = conv_layer->output_channels;
+    int in_channel_number = conv_layer->input_channels;
+    int out_channel_number = conv_layer->output_channels;
     /*in each VMM turns*/
     int row_index = 0;
     int leftover_number = input_width % weights_number;
@@ -528,32 +604,41 @@ void Conv_image(CovLayer *conv_layer, int input_width, uint8_t ***input_array,
     uint8_t mac_in_process = 0;
     uint8_t mac_in_end = 0;
     int d = 0;
-    int scl = 0;
     int count = 0;
+    printf("leftover_number: %d\n", leftover_number);
+    printf("input_width: %d\n", input_width);
+    printf("weights_number: %d\n", weights_number);
 
     for (int i = VMM_turns - 28; i < VMM_turns; i++)
     {
-        if (((i + 1) % channels_number == 0) && (i > 1))
+        if (((i + 1) % (out_channel_number*in_channel_number) == 0) && (i > 1))// I really don't know what the fuck it is 
         /* when it comes to end of coulmns*/
         {
-            for (int h = 0; h < leftover_number * channels_number; h++)
+            for (int h = 0; h < leftover_number * out_channel_number; h++)
             {
                 /*for each scanning x 4*/
-                if (((h + 1) % channels_number == 0) && (h > 1))
+                if (((h + 1) % out_channel_number == 0) && (h > 1))
                 {
-                    for (d = 0; d < channels_number; d++)
+                    for (d = 0; d < out_channel_number; d++)
                     {
+                        printf("row_: %d, *column_: %d ", row_index, *column_index);
                         /*assign value from i VMM turn for dth channel, ith column, h element*/
-                        for (scl = 0; scl < scaling; scl++)
+                        for (int scl = 0; scl < scaling; scl++)
                         {
                             mac_in_end += input_array[scl][i - 28 * (page_index - 1)][h + d - 3];
                         }
-                        conv_layer->v[d][row_index][*column_index] = mac_in_end;
+                        
+
+                        conv_layer->v[d][row_index][*column_index] = ActivationReLu(mac_in_end, 
+                                                                    conv_layer->basic_data[d]);
                         // printf("mac_in_end: %d\n", (int)(mac_in_end*1000));
                         mac_in_end = 0;
                     }
-                    row_index++;
-                    // printf("finsihed\n");
+                    printf("\n");
+                    if (row_index == conv_layer->input_width - conv_layer->map_size)
+                        row_index = 0;
+                    else
+                        row_index++; // printf("finsihed\n");
                 }
             }
 
@@ -568,21 +653,25 @@ void Conv_image(CovLayer *conv_layer, int input_width, uint8_t ***input_array,
             for (int h = 0; h < IMCcol; h++)
             {
                 /*for each scanning x 4*/
-                if (((h + 1) % channels_number == 0) && (h > 1))
+                if (((h + 1) % out_channel_number == 0) && (h > 1))
                 {
-                    for (d = 0; d < channels_number; d++)
+                    for (d = 0; d < out_channel_number; d++)
                     {
                         /*assign value from i VMM turn for dth channel, ith column, h element*/
-                        for (scl = 0; scl < scaling; scl++)
+                        for (int scl = 0; scl < scaling; scl++)
                         {
                             mac_in_process += input_array[scl][i - 28 * (page_index - 1)][h + d - 3];
                         }
-                        conv_layer->v[d][row_index][*column_index] = mac_in_process;
+                        // printf("d:%d, row_index: %d, *column_index: %d\n", row_index ,* column_index);
+
+                        conv_layer->v[d][row_index][*column_index] = ActivationReLu(mac_in_process, conv_layer->basic_data[d]);
                         // printf("mac_in_process: %d\n", (int)(mac_in_process * 1000));
                         mac_in_process = 0;
                     }
-                    row_index++;
-                    // printf("finished\n");
+                    if (row_index == conv_layer->input_width - conv_layer->map_size)
+                        row_index = 0;
+                    else
+                        row_index++; // printf("finished\n");
                 }
             }
         }
@@ -634,13 +723,13 @@ void freeConvLayer(CovLayer *covL)
         for (r = 0; r < outH; r++)
         {
             free(covL->v[j][r]);
-            free(covL->y[j][r]);
+            // free(covL->y[j][r]);
         }
         free(covL->v[j]);
-        free(covL->y[j]);
+        // free(covL->y[j]);
     }
     free(covL->v);
-    free(covL->y);
+    // free(covL->y);
     free(covL);
 }
 
@@ -664,29 +753,21 @@ void freePoolLayer(PoolingLayer *pol)
     free(pol);
 }
 
-uint8_t ***generate_input_array()
+uint8_t ***generate_input_array(int scal, int size)
 {
-    uint8_t ***VMM_input_array;
-    VMM_input_array = malloc(sizeof(*VMM_input_array) * 1);
-    VMM_input_array[0] = malloc(sizeof(*VMM_input_array[0]) * 28);
-    for (int i = 0; i < 28; i++)
-        VMM_input_array[0][i] = malloc(sizeof(*VMM_input_array[0][i]) * IMCrow);
+    uint8_t ***VMM_input_array = alloc_3darray(scal, size, IMCrow);
 
     return VMM_input_array;
 }
 
-uint8_t ***generate_result_array()
+uint8_t ***generate_result_array(int scal, int VMM_turns)
 {
-    uint8_t ***result_list;
-    result_list = malloc(sizeof(*result_list) * 1);
-    result_list[0] = malloc(sizeof(*result_list[0]) * 28);
-    for (int i = 0; i < 28; i++)
-        result_list[0][i] = malloc(sizeof(*result_list[0][i]) * IMCcol);
+    uint8_t ***result_list = alloc_3darray(scal, VMM_turns, IMCcol);
 
     return result_list;
 }
 
-void _free_3darray(int ***data, size_t xlen, size_t ylen)
+void free_data(uint8_t **data, size_t xlen, size_t ylen)
 {
     size_t i, j;
 
@@ -702,7 +783,24 @@ void _free_3darray(int ***data, size_t xlen, size_t ylen)
     free(data);
 }
 
-void _free_2darray(int **data, size_t xlen)
+void free_3darray(uint8_t ***data, size_t xlen, size_t ylen)
+{
+    size_t i, j;
+
+    for (i = 0; i < xlen; ++i)
+    {
+        if (data[i] != NULL)
+        {
+            for (j = 0; j < ylen; ++j)
+                free(data[i][j]);
+            free(data[i]);
+        }
+    }
+    free(data);
+    printf("done!\n");
+}
+
+void free_2darray(uint8_t **data, size_t xlen)
 {
     size_t i, j;
 
@@ -714,12 +812,7 @@ void _free_2darray(int **data, size_t xlen)
     free(data);
 }
 
-void _free_1darray(int *data)
-{
-    free(data);
-}
-
-uint8_t ***_alloc_3darray(size_t xlen, size_t ylen, size_t zlen)
+uint8_t ***alloc_3darray(size_t xlen, size_t ylen, size_t zlen)
 {
     uint8_t ***p;
     size_t i, j;
@@ -737,7 +830,7 @@ uint8_t ***_alloc_3darray(size_t xlen, size_t ylen, size_t zlen)
         if ((p[i] = malloc(ylen * sizeof *p[i])) == NULL)
         {
             perror("malloc 2");
-            free_data(p, xlen, ylen);
+            free_3darray(p, xlen, ylen);
             return NULL;
         }
 
@@ -750,14 +843,14 @@ uint8_t ***_alloc_3darray(size_t xlen, size_t ylen, size_t zlen)
             if ((p[i][j] = malloc(zlen * sizeof *p[i][j])) == NULL)
             {
                 perror("malloc 3");
-                free_data(p, xlen, ylen);
+                free_3darray(p, xlen, ylen);
                 return NULL;
             }
 
     return p;
 }
 
-uint8_t **_alloc_2darray(size_t xlen, size_t ylen)
+uint8_t **alloc_2darray(size_t xlen, size_t ylen)
 {
     uint8_t **p;
     size_t i, j;
@@ -775,14 +868,14 @@ uint8_t **_alloc_2darray(size_t xlen, size_t ylen)
         if ((p[i] = malloc(ylen * sizeof *p[i])) == NULL)
         {
             perror("malloc 2");
-            free_data(p, xlen, ylen);
+            free_2darray(p, xlen);
             return NULL;
         }
 
     return p;
 }
 
-uint8_t *_alloc_1darray(size_t xlen)
+uint8_t *alloc_1darray(size_t xlen)
 {
     uint8_t *p;
     size_t i, j;

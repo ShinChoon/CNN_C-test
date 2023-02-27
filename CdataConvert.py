@@ -57,10 +57,13 @@ def resize_images(data):
         
     return _result
 
-def load_data_shared():
-    imagesarray = idx2numpy.convert_from_file("mnist/t10k-images-idx3-ubyte")
-    imagesarray = imagesarray/255
-    return imagesarray
+def load_data_shared(filename="mnist.pkl.gz"):
+    f = gzip.open(filename, 'rb')
+    training_data, validation_data, test_data = pickle.load(
+        f, encoding="latin1")
+    f.close()
+
+    return test_data
 
 
 def converstring_int_list(nu_array):
@@ -76,11 +79,11 @@ def remove_enpty_space(_list):
     return w22
 
 
-training_data = load_data_shared()
-resize_images = resize_images([training_data[0]])
+# test_data = load_data_shared()
+# resize_images = resize_images([test_data[0][17]])
 
 # # prolog
-# print('float imagearray[30][30] = {')
+# print('uint8_t imagearray[30][30] = {')
 
 # # data
 # for row in resize_images:

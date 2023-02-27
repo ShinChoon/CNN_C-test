@@ -74,38 +74,38 @@ CovLayer *InitialCovLayer(int input_width, int input_height, int map_size,
 
 	covL->is_full_connect = true; //
 	int i, j, c, r;
-	// covL->map_data = malloc(output_channels * sizeof(*covL->map_data));
-	// for (i = 0; i < output_channels; i++)
-	// {
-	// 	covL->map_data[i] = malloc(input_channels * sizeof(*(covL->map_data)[i]));
-	// 	for (j = 0; j < input_channels; j++)
-	// 	{
-	// 		covL->map_data[i][j] = malloc(map_size * sizeof(*(covL->map_data)[i][j]));
-	// 		for (r = 0; r < map_size; r++)
-	// 		{
-	// 			covL->map_data[i][j][r] = malloc(map_size * sizeof(*(covL->map_data)[i][j][r]));
-	// 		}
-	// 	}
-	// }
+	covL->map_data = malloc(output_channels * sizeof(*covL->map_data));
+	for (i = 0; i < output_channels; i++)
+	{
+		covL->map_data[i] = malloc(input_channels * sizeof(*(covL->map_data)[i]));
+		for (j = 0; j < input_channels; j++)
+		{
+			covL->map_data[i][j] = malloc(map_size * sizeof(*(covL->map_data)[i][j]));
+			for (r = 0; r < map_size; r++)
+			{
+				covL->map_data[i][j][r] = malloc(map_size * sizeof(*(covL->map_data)[i][j][r]));
+			}
+		}
+	}
 
-	// covL->basic_data = malloc(output_channels * sizeof(*(covL->basic_data)));
+	covL->basic_data = malloc(output_channels * sizeof(*(covL->basic_data)));
 
 	int outW = input_width - map_size + 1;
 	int outH = input_height - map_size + 1;
 
 	// covL->d = (uint8_t ***)malloc(output_channels * sizeof(uint8_t **));
 	covL->v = malloc(output_channels * sizeof(*(covL->v)));
-	covL->y = malloc(output_channels * sizeof(*(covL->v)));
+	// covL->y = malloc(output_channels * sizeof(*(covL->v)));
 	for (j = 0; j < output_channels; j++)
 	{
 		// covL->d[j] = (uint8_t **)malloc(outH * sizeof(uint8_t *));
 		covL->v[j] = malloc(outH * sizeof(*(covL->v)[j]));
-		covL->y[j] = malloc(outH * sizeof(*(covL->v)[j]));
+		// covL->y[j] = malloc(outH * sizeof(*(covL->v)[j]));
 		for (r = 0; r < outH; r++)
 		{
 			// covL->d[j][r] = (uint8_t *)calloc(outW, sizeof(uint8_t));
 			covL->v[j][r] = malloc(outW * sizeof(*(covL->v)[j][r]));
-			covL->y[j][r] = malloc(outW * sizeof(*(covL->v)[j][r]));
+			// covL->y[j][r] = malloc(outW * sizeof(*(covL->v)[j][r]));
 		}
 	}
 
@@ -255,49 +255,6 @@ void SaveCnn(Cnn *cnn, const char *filename)
 
 	fwrite(cnn->O6->basic_data, sizeof(uint8_t),
 		   cnn->O6->output_num, file_point);
-
-	fclose(file_point);
-}
-
-// import cnn from file
-void ImportCnn(Cnn *cnn, const char *filename)
-{
-	FILE *file_point = NULL;
-	file_point = fopen(filename, "rb");
-
-	if (file_point == NULL)
-		printf("[-] <ImportCnn> Open file failed! <%s>\n", filename);
-
-	int i, j, c, r;
-
-	for (i = 0; i < cnn->C1->input_channels; i++)
-		for (j = 0; j < cnn->C1->output_channels; j++)
-			for (r = 0; r < cnn->C1->map_size; r++)
-				for (c = 0; c < cnn->C1->map_size; c++)
-				{
-					uint8_t *in = malloc(sizeof(*in));
-					fread(in, sizeof(uint8_t), 1, file_point);
-					cnn->C1->map_data[i][j][r][c] = *in;
-				}
-
-	for (i = 0; i < cnn->C1->output_channels; i++)
-		fread(&cnn->C1->basic_data[i], sizeof(uint8_t), 1, file_point);
-
-	for (i = 0; i < cnn->C3->input_channels; i++)
-		for (j = 0; j < cnn->C3->output_channels; j++)
-			for (r = 0; r < cnn->C3->map_size; r++)
-				for (c = 0; c < cnn->C3->map_size; c++)
-					fread(&cnn->C3->map_data[i][j][r][c], sizeof(uint8_t), 1, file_point);
-
-	for (i = 0; i < cnn->C3->output_channels; i++)
-		fread(&cnn->C3->basic_data[i], sizeof(uint8_t), 1, file_point);
-
-	for (i = 0; i < cnn->O6->output_num; i++)
-		for (j = 0; j < cnn->O6->input_num; j++)
-			fread(&cnn->O6->wData[i][j], sizeof(uint8_t), 1, file_point);
-
-	for (i = 0; i < cnn->O6->output_num; i++)
-		fread(&cnn->O6->basic_data[i], sizeof(uint8_t), 1, file_point);
 
 	fclose(file_point);
 }
@@ -486,18 +443,19 @@ uint8_t ActivationSigma(uint8_t input, uint8_t bas) // sigma activatiion functio
 /**********************************************************************/
 uint8_t ActivationReLu(uint8_t input, uint16_t bas)
 {
-	uint8_t temp = input + bas - 31;
-	if ((temp > 31) && (temp <= 255))
+	int8_t _bas = bas - 31; // range(0,62) -> range(-31, 31)
+	int8_t temp = input + _bas;
+	int8_t sum = temp;
+
+	if ((sum > 31) && (sum <= 63))
 	{
-		return temp;
+		return sum;
 	}
-	else if (temp > 255)
+	if (sum > 63)
+		return 63;
+	else if (sum <= 31)
 	{
-		return 255;
-	}
-	else
-	{
-		return (uint8_t)31;
+		return 31;
 	}
 }
 void AvgPooling(uint8_t **output, MatSize output_size, uint8_t **input,

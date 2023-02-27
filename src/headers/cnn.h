@@ -111,7 +111,6 @@ OutputLayer *InitOutputLayer(int input_num, int output_num);
 
 uint8_t ActivationSigma(uint8_t input, uint8_t bas);
 uint8_t ActivationReLu(uint8_t input, uint16_t bas);
-uint8_t _ActivationReLu(uint8_t input);
 
 void CnnFF(Cnn *cnn, uint8_t **inputData);
 void CnnBP(Cnn *cnn, uint8_t *outputData);

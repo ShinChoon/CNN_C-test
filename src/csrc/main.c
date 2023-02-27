@@ -100,13 +100,13 @@ void FeedVMM_image(uint8_t ***VMMarray, uint8_t pagenumber, uint8_t scal)
 #endif
     }
 }
-void VMMMACoperation(uint8_t ***result_list, int pagenumber)
+void VMMMACoperation(uint8_t ***result_list, int pagenumber, int scal)
 {
     uint8_t result = 0;
     for (int h = 0; h < IMCcol; h++)
     {
         result = (uint8_t)read(h);
-        result_list[0][pagenumber][h] = result;
+        result_list[scal][pagenumber][h] = result;
         // printf("%d ", (int)(result_list[0][pagenumber][h]));
     }
     // printf("\n");
@@ -185,7 +185,7 @@ void main()
                 FeedVMM_image(VMM_input_array, page_image, i);
 #ifdef ACORE
                 printf("reading\n");
-                VMMMACoperation(result_list, page_image); // feedVMM and write VMMmac should be looped by scal right?
+                VMMMACoperation(result_list, page_image, i); // feedVMM and write VMMmac should be looped by scal right?
 
 #else
                 vmm->MACoperation(VMM_input_array, result_list, weight_array, page_image, scal);

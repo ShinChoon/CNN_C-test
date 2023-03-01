@@ -92,6 +92,8 @@ CovLayer *InitialCovLayer(int input_width, int input_height, int map_size,
 
 	int outW = input_width - map_size + 1;
 	int outH = input_height - map_size + 1;
+	printf("@@@@@outW: %d\n", outW);
+	printf("@@@@@outH: %d\n", outH);
 
 	// covL->d = (uint8_t ***)malloc(output_channels * sizeof(uint8_t **));
 	covL->v = calloc(output_channels, sizeof(*(covL->v)));

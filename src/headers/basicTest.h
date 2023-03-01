@@ -19,7 +19,7 @@ struct weight_map
 };
 
 VMM *initializeVMM(Cnn *cnn);
-void weights_mapping(CovLayer *cc, uint8_t ***VMM_weights_map, int *weights_number, int scaling);
+void weights_mapping(CovLayer *cc, uint8_t ***VMM_weights_map, int *weights_number, int scaling, int layer_index);
 void inputs_mapping(CovLayer *cc, MnistImage **images, uint8_t ***VMM_input_array, int *VMM_turns,
                     int scaling);
 void assign_to_sub_array(uint8_t ***maplist, uint8_t *temp_input, int size_xx, int count_y, int scal);
@@ -37,8 +37,8 @@ const char *getfield(char *line, int num);
 void load_weights(CovLayer *cc, uint8_t ****weights);
 void load_bias(CovLayer *cc, uint8_t *bias);
 
-void Conv_imageConv_image(CovLayer *conv_layer, PoolingLayer *pool_layer, uint8_t ***input_array,
-                          int VMM_turns, int weights_number, int scaling, int *columndex);
+void Conv_image(CovLayer *conv_layer, PoolingLayer *pool_layer, uint8_t ***input_array,
+                          int VMM_turns, int weights_number, int scaling, int layer_index);
 void MACoperation(uint8_t ***input_array, uint8_t ***output_array, uint8_t ***weight_array,
                   int VMM_turns, int scaling);
 void save_image(int scale, uint8_t ***image_data);

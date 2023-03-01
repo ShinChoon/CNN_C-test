@@ -79,21 +79,8 @@ void _CnnFF(CovLayer *conv_layer, PoolingLayer *pool_layer)
     // int output_sizeH = pool_layer->input_height;
 
     printf("do activation in cnff\n");
-    // /*convolution result is conv_layer->v*/
-    // for (int i = 0; i < (conv_layer->output_channels); i++)
-    // {
-    //     /*Activation function with params of weighted input and bias*/
-    //     for (int row = 0; row < output_size.rows; row++)
-    //     {
-    //         for (int col = 0; col < output_size.columns; col++)
-    //         {
-    //             conv_layer->y[i][row][col] = ActivationReLu(conv_layer->v[i][row][col],
-    //                                                         conv_layer->basic_data[i]);
-    //         }
-    //     }
-    // }
 
-    printf("do pooöing in cnff!\n");
+    printf("do pooling in cnff!\n");
     output_size.columns = pool_layer->input_width / 2;
     output_size.rows = pool_layer->input_height / 2;
     input_size.columns = pool_layer->input_width;
@@ -126,23 +113,23 @@ ImageArray _ReadImages(const char *filename)
     n_rows = 30;
     n_columns = 30;
 
-    ImageArray image_array = malloc(sizeof(*image_array));
+    ImageArray image_array = calloc(1, sizeof(*image_array));
     // define strutrue of image array
     image_array->number_of_images = number_of_images; // number of images
     // array of all images.
-    image_array->image_point = malloc(number_of_images * sizeof(*(image_array->image_point)));
+    image_array->image_point = calloc(number_of_images, sizeof(*(image_array->image_point)));
 
     int row, column;                           // Temp for row and column
     for (int i = 0; i < number_of_images; ++i) // Images from 0 -> number_of_images-1
     {
         image_array->image_point[i].number_of_rows = n_rows;
         image_array->image_point[i].number_of_columns = n_columns; // set
-        image_array->image_point[i].image_data = malloc((n_rows) * sizeof(*(image_array->image_point[i].image_data)));
+        image_array->image_point[i].image_data = calloc(n_rows, sizeof(*(image_array->image_point[i].image_data)));
 
         /*from 0 -> Nth rows*/
         for (row = 0; row < n_rows; ++row)
         {
-            image_array->image_point[i].image_data[row] = malloc((n_columns) * sizeof((image_array->image_point[i].image_data[row]))); // expanding to 30
+            image_array->image_point[i].image_data[row] = calloc((n_columns), sizeof((image_array->image_point[i].image_data[row]))); // expanding to 30
             for (column = 0; column < n_columns; ++column)                                                                             // from 0 -> n_columns
             {
                 // read a pixel 0-255 with 8-bit
@@ -188,7 +175,7 @@ void weights_mapping(CovLayer *cc, uint8_t ***VMM_weights_map, int *weights_numb
             {
                 for (int y = 0; y < 3; y++)
                 {
-                    map_array[j][i][k2] = cc->map_data[j][i][x][y];
+                    map_array[j][i][k2] = weights_map_1[j][i][x][y];
                     k2++;
                 }
             }
@@ -478,29 +465,29 @@ ImageArray Output_image(int cols, int rows, uint8_t ***image_data, int number)
     int number_of_images = number; // Images' number
     int n_rows = rows; // number of rows of an image<image hight>
     int n_columns = cols; // number of cols of an image<image width>
-    MnistImage *imagemodel = malloc(sizeof(*imagemodel));
+    MnistImage *imagemodel = calloc(1, sizeof(*imagemodel));
     imagemodel->number_of_columns = cols;
     imagemodel->number_of_rows = rows;
 
     // uint8_t zero_pixel = 0;
     uint8_t temp_pixel = 0;
-    ImageArray image_array = malloc(sizeof(*image_array));
+    ImageArray image_array = calloc(1, sizeof(*image_array));
 
     // define strutrue of image array
     image_array->number_of_images = number_of_images; // number of images
     // array of all images.
-    image_array->image_point = malloc(number_of_images * sizeof(*(image_array->image_point)));
+    image_array->image_point = calloc(number_of_images, sizeof(*(image_array->image_point)));
 
     for (int i = 0; i < number_of_images; ++i) // Images from 0 -> number_of_images-1
     {
         image_array->image_point[i].number_of_rows = n_rows;
         image_array->image_point[i].number_of_columns = n_columns; // set
-        image_array->image_point[i].image_data = malloc((n_rows) * sizeof(*(image_array->image_point[i].image_data)));
+        image_array->image_point[i].image_data = calloc((n_rows),  sizeof(*(image_array->image_point[i].image_data)));
 
         /*from 0 -> Nth rows*/
         for (int row = 0; row < n_rows; ++row)
         {
-            image_array->image_point[i].image_data[row] = malloc((n_columns) * sizeof((image_array->image_point[i].image_data[row]))); // expanding to 30
+            image_array->image_point[i].image_data[row] = calloc(n_columns, sizeof((image_array->image_point[i].image_data[row]))); // expanding to 30
             for (int column = 0; column < n_columns; ++column)                                                                             // from 0 -> n_columns
             {
                 // read a pixel 0-255 with 8-bit
@@ -517,7 +504,7 @@ ImageArray Output_image(int cols, int rows, uint8_t ***image_data, int number)
 VMM *initializeVMM(Cnn *cnn)
 /*initalize the VMM and return VMM*/
 {
-    VMM *vmm = malloc(sizeof(*vmm));
+    VMM *vmm = calloc(1, sizeof(*vmm));
     vmm->Cnn = cnn;
     vmm->cols = IMCcol;
     vmm->rows = IMCrow;
@@ -619,7 +606,7 @@ void Conv_image(CovLayer *conv_layer, PoolingLayer *pool_layer, uint8_t ***input
                         
 
                         conv_layer->v[d][row_index][*column_index] = ActivationReLu(mac_in_end, 
-                                                                    conv_layer->basic_data[d]);
+                                                                    bias_1[d]);
                         // printf("mac_in_end: %d\n", (int)(mac_in_end*1000));
                         mac_in_end = 0;
                     }
@@ -653,7 +640,7 @@ void Conv_image(CovLayer *conv_layer, PoolingLayer *pool_layer, uint8_t ***input
                         }
                         // printf("d:%d, row_index: %d, *column_index: %d\n", row_index ,* column_index);
 
-                        conv_layer->v[d][row_index][*column_index] = ActivationReLu(mac_in_process, conv_layer->basic_data[d]);
+                        conv_layer->v[d][row_index][*column_index] = ActivationReLu(mac_in_process, bias_1[d]);
                         // printf("mac_in_process: %d\n", (int)(mac_in_process * 1000));
                         mac_in_process = 0;
                     }
@@ -667,16 +654,16 @@ void Conv_image(CovLayer *conv_layer, PoolingLayer *pool_layer, uint8_t ***input
     }
 }
 
-void save_image(int scale, uint8_t **image_data)
+void save_image(int scale, uint8_t ***image_data)
 {
-    int temp = 0;
+    uint8_t *temp = 0;
     for (int i = 0; i < scale; i++)
     {
         for (int j = 0; j < scale; j++)
         {
-            temp = (int)(image_data[i][j]);
+            temp = image_data[i][j];
             // Writing the gray values in the 2D array to the file
-            printf("%d ", temp);
+            printf("%d ", *temp);
         }
         printf("\n");
     }
@@ -687,22 +674,22 @@ void freeConvLayer(CovLayer *covL)
 {
     printf("freeConvLayer!\n");
     int i, j, c, r;
-    for (i = 0; i < covL->output_channels; i++)
-    {
-        for (j = 0; j < covL->input_channels; j++)
-        {
-            for (r = 0; r < covL->map_size; r++)
-            {
-                free(covL->map_data[i][j][r]);
-            }
-            free(covL->map_data[i][j]);
-        }
-        free(covL->map_data[i]);
-    }
-    free(covL->map_data);
-    printf("free map_data!\n");
-    free(covL->basic_data);
-    printf("free basic_data!\n");
+    // for (i = 0; i < covL->output_channels; i++)
+    // {
+    //     for (j = 0; j < covL->input_channels; j++)
+    //     {
+    //         for (r = 0; r < covL->map_size; r++)
+    //         {
+    //             free(covL->map_data[i][j][r]);
+    //         }
+    //         free(covL->map_data[i][j]);
+    //     }
+    //     free(covL->map_data[i]);
+    // }
+    // free(covL->map_data);
+    // printf("free map_data!\n");
+    // free(covL->basic_data);
+    // printf("free basic_data!\n");
 
     int outW = covL->input_width - covL->map_size + 1;
     int outH = covL->input_height - covL->map_size + 1;
@@ -724,7 +711,7 @@ void freeConvLayer(CovLayer *covL)
 
 void freePoolLayer(PoolingLayer *pol)
 {
-
+    printf("freePoolLayer!\n");
     int outW = pol->input_width / pol->map_size;
     int outH = pol->input_height / pol->map_size;
 
@@ -738,7 +725,7 @@ void freePoolLayer(PoolingLayer *pol)
         free(pol->y[j]);
     }
     free(pol->y);
-    free(pol->basic_data);
+    // free(pol->basic_data);
     free(pol);
 }
 
@@ -801,14 +788,30 @@ void free_2darray(uint8_t **data, size_t xlen)
     free(data);
 }
 
+void free_image(ImageArray image_array, int rows, int number_of_images)
+{
+    for (int i = 0; i < number_of_images; ++i) // Images from 0 -> number_of_images-1
+    {
+
+        /*from 0 -> Nth rows*/
+        for (int row = 0; row < rows; ++row)
+        {
+            free(image_array->image_point[i].image_data[row]);
+        }
+        free(image_array->image_point[i].image_data);
+    }
+    free(image_array->image_point);
+    free(image_array);
+}
+
 uint8_t ***alloc_3darray(size_t xlen, size_t ylen, size_t zlen)
 {
     uint8_t ***p;
     size_t i, j;
 
-    if ((p = malloc(xlen * sizeof *p)) == NULL)
+    if ((p = calloc(xlen,  sizeof *p)) == NULL)
     {
-        perror("malloc 1");
+        perror("calloc 1");
         return NULL;
     }
 
@@ -816,9 +819,9 @@ uint8_t ***alloc_3darray(size_t xlen, size_t ylen, size_t zlen)
         p[i] = NULL;
 
     for (i = 0; i < xlen; ++i)
-        if ((p[i] = malloc(ylen * sizeof *p[i])) == NULL)
+        if ((p[i] = calloc(ylen,  sizeof *p[i])) == NULL)
         {
-            perror("malloc 2");
+            perror("calloc 2");
             free_3darray(p, xlen, ylen);
             return NULL;
         }
@@ -829,9 +832,9 @@ uint8_t ***alloc_3darray(size_t xlen, size_t ylen, size_t zlen)
 
     for (i = 0; i < xlen; ++i)
         for (j = 0; j < ylen; ++j)
-            if ((p[i][j] = malloc(zlen * sizeof *p[i][j])) == NULL)
+            if ((p[i][j] = calloc(zlen,  sizeof *p[i][j])) == NULL)
             {
-                perror("malloc 3");
+                perror("calloc 3");
                 free_3darray(p, xlen, ylen);
                 return NULL;
             }
@@ -844,9 +847,9 @@ uint8_t **alloc_2darray(size_t xlen, size_t ylen)
     uint8_t **p;
     size_t i, j;
 
-    if ((p = malloc(xlen * sizeof *p)) == NULL)
+    if ((p = calloc(xlen,  sizeof *p)) == NULL)
     {
-        perror("malloc 1");
+        perror("calloc 1");
         return NULL;
     }
 
@@ -854,9 +857,9 @@ uint8_t **alloc_2darray(size_t xlen, size_t ylen)
         p[i] = NULL;
 
     for (i = 0; i < xlen; ++i)
-        if ((p[i] = malloc(ylen * sizeof *p[i])) == NULL)
+        if ((p[i] = calloc(ylen,  sizeof *p[i])) == NULL)
         {
-            perror("malloc 2");
+            perror("calloc 2");
             free_2darray(p, xlen);
             return NULL;
         }
@@ -869,9 +872,9 @@ uint8_t *alloc_1darray(size_t xlen)
     uint8_t *p;
     size_t i, j;
 
-    if ((p = malloc(xlen * sizeof *p)) == NULL)
+    if ((p = calloc(xlen,  sizeof *p)) == NULL)
     {
-        perror("malloc 1");
+        perror("calloc 1");
         return NULL;
     }
 

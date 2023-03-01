@@ -1,7 +1,7 @@
 #ifndef WEIGHTS_BIAS_H
 #define WEIGHTS_BIAS_H
 #include <stdint.h>
-uint8_t weights_map_1[4][1][3][3] = {
+const uint8_t weights_map_1[4][1][3][3] = {
 {
 {
 {

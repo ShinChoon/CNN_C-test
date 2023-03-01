@@ -46,7 +46,7 @@ typedef struct PoolingLayer
 	int pooling_type;
 	uint8_t *basic_data;
 
-	uint8_t ***y;
+	uint8_t ****y;
 	uint8_t ***d;
 } PoolingLayer;
 
@@ -120,7 +120,7 @@ void CnnClear(Cnn *cnn);
 void AvgPooling(uint8_t **output, MatSize outputSize, uint8_t **input,
 				MatSize inputSize, int map_size);
 
-void MaxPooling(uint8_t **output, MatSize outputSize, uint8_t **input,
+void MaxPooling(uint8_t ***output, MatSize outputSize, uint8_t **input,
 				MatSize inputSize, int map_size);
 
 void nnff(uint8_t *output, uint8_t *input, uint8_t **wdata, uint8_t *bas, MatSize nnSize);

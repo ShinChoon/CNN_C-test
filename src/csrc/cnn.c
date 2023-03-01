@@ -74,37 +74,37 @@ CovLayer *InitialCovLayer(int input_width, int input_height, int map_size,
 
 	covL->is_full_connect = true; //
 	int i, j, c, r;
-	covL->map_data = malloc(output_channels * sizeof(*covL->map_data));
-	for (i = 0; i < output_channels; i++)
-	{
-		covL->map_data[i] = malloc(input_channels * sizeof(*(covL->map_data)[i]));
-		for (j = 0; j < input_channels; j++)
-		{
-			covL->map_data[i][j] = malloc(map_size * sizeof(*(covL->map_data)[i][j]));
-			for (r = 0; r < map_size; r++)
-			{
-				covL->map_data[i][j][r] = malloc(map_size * sizeof(*(covL->map_data)[i][j][r]));
-			}
-		}
-	}
+	// covL->map_data = malloc(output_channels * sizeof(*covL->map_data));
+	// for (i = 0; i < output_channels; i++)
+	// {
+	// 	covL->map_data[i] = malloc(input_channels * sizeof(*(covL->map_data)[i]));
+	// 	for (j = 0; j < input_channels; j++)
+	// 	{
+	// 		covL->map_data[i][j] = malloc(map_size * sizeof(*(covL->map_data)[i][j]));
+	// 		for (r = 0; r < map_size; r++)
+	// 		{
+	// 			covL->map_data[i][j][r] = malloc(map_size * sizeof(*(covL->map_data)[i][j][r]));
+	// 		}
+	// 	}
+	// }
 
-	covL->basic_data = malloc(output_channels * sizeof(*(covL->basic_data)));
+	// covL->basic_data = malloc(output_channels * sizeof(*(covL->basic_data)));
 
 	int outW = input_width - map_size + 1;
 	int outH = input_height - map_size + 1;
 
 	// covL->d = (uint8_t ***)malloc(output_channels * sizeof(uint8_t **));
-	covL->v = malloc(output_channels * sizeof(*(covL->v)));
+	covL->v = calloc(output_channels, sizeof(*(covL->v)));
 	// covL->y = malloc(output_channels * sizeof(*(covL->v)));
 	for (j = 0; j < output_channels; j++)
 	{
 		// covL->d[j] = (uint8_t **)malloc(outH * sizeof(uint8_t *));
-		covL->v[j] = malloc(outH * sizeof(*(covL->v)[j]));
+		covL->v[j] = calloc(outH, sizeof(*(covL->v)[j]));
 		// covL->y[j] = malloc(outH * sizeof(*(covL->v)[j]));
 		for (r = 0; r < outH; r++)
 		{
 			// covL->d[j][r] = (uint8_t *)calloc(outW, sizeof(uint8_t));
-			covL->v[j][r] = malloc(outW * sizeof(*(covL->v)[j][r]));
+			covL->v[j][r] = calloc(outW, sizeof(*(covL->v)[j][r]));
 			// covL->y[j][r] = malloc(outW * sizeof(*(covL->v)[j][r]));
 		}
 	}
@@ -115,7 +115,7 @@ CovLayer *InitialCovLayer(int input_width, int input_height, int map_size,
 PoolingLayer *InitialPoolingLayer(int input_width, int input_height,
 								  int map_size, int input_channels, int output_channels, int pooling_type)
 {
-	PoolingLayer *poolL = malloc(sizeof(*poolL));
+	PoolingLayer *poolL = calloc(1, sizeof(*poolL));
 
 	poolL->input_height = input_height;
 	poolL->input_width = input_width;
@@ -124,22 +124,22 @@ PoolingLayer *InitialPoolingLayer(int input_width, int input_height,
 	poolL->output_channels = output_channels;
 	poolL->pooling_type = pooling_type;
 
-	poolL->basic_data = malloc(output_channels * sizeof(*(poolL->basic_data)));
+	// poolL->basic_data = malloc(output_channels * sizeof(*(poolL->basic_data)));
 
 	int outW = input_width / map_size;
 	int outH = input_height / map_size;
 
 	int j, r;
 	// poolL->d = (uint8_t ***)malloc(output_channels * sizeof(uint8_t **));
-	poolL->y = malloc(output_channels * sizeof(*(poolL->y)));
+	poolL->y = calloc(output_channels, sizeof(*(poolL->y)));
 	for (j = 0; j < output_channels; j++)
 	{
 		// poolL->d[j] = (uint8_t **)malloc(outH * sizeof(uint8_t *));
-		poolL->y[j] = malloc(outH * sizeof(*(poolL->y[j])));
+		poolL->y[j] = calloc(outH, sizeof(*(poolL->y[j])));
 		for (r = 0; r < outH; r++)
 		{
 			// poolL->d[j][r] = (uint8_t *)calloc(outW, sizeof(uint8_t));
-			poolL->y[j][r] = malloc(outW * sizeof(*(poolL->y[j][r])));
+			poolL->y[j][r] = calloc(outW, sizeof(*(poolL->y[j][r])));
 		}
 	}
 
@@ -443,9 +443,12 @@ uint8_t ActivationSigma(uint8_t input, uint8_t bas) // sigma activatiion functio
 /**********************************************************************/
 uint8_t ActivationReLu(uint8_t input, uint16_t bas)
 {
-	int8_t _bas = bas - 31; // range(0,62) -> range(-31, 31)
-	int8_t temp = input + _bas;
-	int8_t sum = temp;
+	int8_t _bas = 0; // range(0,62) -> range(-31, 31)
+	int8_t temp = 0;
+	int8_t sum = 0;
+	_bas = bas - 31;
+	temp = input + _bas;
+	sum = temp;
 
 	if ((sum > 31) && (sum <= 63))
 	{
@@ -480,8 +483,9 @@ void AvgPooling(uint8_t **output, MatSize output_size, uint8_t **input,
 		}
 }
 
-void MaxPooling(uint8_t **output, MatSize output_size, uint8_t **input,
+void MaxPooling(uint8_t ***output, MatSize output_size, uint8_t **input,
 				MatSize input_size, int map_size)
+			/*it is just address storage */
 {
 	int outputW = input_size.columns / map_size;
 	int outputH = input_size.rows / map_size;
@@ -493,11 +497,15 @@ void MaxPooling(uint8_t **output, MatSize output_size, uint8_t **input,
 	for (i = 0; i < outputH; i++)
 		for (j = 0; j < outputW; j++)
 		{
-			uint8_t pMax = 0.0;
+			uint8_t* pMax = 0;
+			uint8_t pNumber = 0;
 			for (m = i * map_size; m < i * map_size + map_size; m++)
 				for (n = j * map_size; n < j * map_size + map_size; n++)
-					if (pMax < input[m][n])
-						pMax = input[m][n];
+					if (input[m][n] > pNumber)
+					{
+						pMax = &(input[m][n]);
+						pNumber = input[m][n];
+					}
 
 			output[i][j] = pMax;
 		}

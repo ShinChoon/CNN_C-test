@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <inttypes.h>
+#include <time.h>
 #include <stdint.h>
 #include "basicTest.h"
 
@@ -20,7 +21,7 @@
 #endif
 
 #ifdef ACORE
-void write(int address, uint8_t data)
+void write_VMM(int address, uint8_t data)
 {
     int high_bits = (int)(address / 256);
     int low_bits = address - high_bits * 256;
@@ -51,7 +52,7 @@ void set_readmode()
 #endif
 
 #ifdef ACORE
-volatile uint8_t read(int index)
+volatile uint8_t read_VMM(int index)
 {
     set_readmode();
     delay(1);
@@ -84,7 +85,7 @@ void FeedVMM_weights(uint8_t ***weight_array)
         index_weight = i % IMCrow;
         feed = weight_array[0][page_weight][index_weight];
 #ifdef ACORE
-        write(i, feed);
+        write_VMM(i, feed);
 #endif
     }
 }
@@ -96,7 +97,7 @@ void FeedVMM_image(uint8_t ***VMMarray, uint8_t pagenumber, uint8_t scal)
     {
         feed = VMMarray[scal][pagenumber][i];
 #ifdef ACORE
-        write(i, feed);
+        write_VMM(i, feed);
 #endif
     }
 }
@@ -105,7 +106,9 @@ void VMMMACoperation(uint8_t ***result_list, int pagenumber, int scal)
     uint8_t result = 0;
     for (int h = 0; h < IMCcol; h++)
     {
-        result = (uint8_t)read(h);
+        #ifdef ACORE    
+        result = (uint8_t)read_VMM(h);
+        #endif
         result_list[scal][pagenumber][h] = result;
         // printf("%d ", (int)(result_list[0][pagenumber][h]));
     }
@@ -114,7 +117,6 @@ void VMMMACoperation(uint8_t ***result_list, int pagenumber, int scal)
 
 void main()
 {
-
     printf("Welcome to A-Core for vmm test!\n");
 
     /*Prepare mapping*/
@@ -134,13 +136,13 @@ void main()
     int output_size = 10;
     printf("[+] Output size: %d\n", output_size);
     // Setup CNN
-    Cnn *cnn = malloc(sizeof(*cnn));
+    Cnn *cnn = calloc(1, sizeof(*cnn));
     _CnnSetup(cnn, input_size, output_size, 1);
     printf("[+] CNN setup finished!\n");
 
     // /*load weights from csv file, not needed anymore*/
-    _ImportCnn(cnn, 1);
-    printf("[+] Import CNN finished!\n");
+    // _ImportCnn(cnn, 1);
+    // printf("[+] Import CNN finished!\n");
 
     /*map weigths and iamge as in IMC shape*/
 
@@ -150,6 +152,7 @@ void main()
     int column_dex = 0;
     /*Weights can be reused right????*/
     MnistImage *input_list[] = {&(test_images->image_point[0])};
+
 
     /*below are for the 1st convolution*/
     /*weights*/
@@ -194,18 +197,23 @@ void main()
             Conv_image(cnn->C1, cnn->S2, result_list, VMM_turns, weights_number, scal, &column_dex);
         }
 
-    free_3darray(VMM_input_array, scal, 112);
-    free_3darray(result_list, scal, 112);
 
-    printf("save image!!\n");
-    _CnnFF(cnn->C1, cnn->S2);
-    for (int ch_i = 0; ch_i < 4; ch_i++)
-    {
-        save_image(14, cnn->S2->y[ch_i]);
-        printf("\n");
-        printf("\n");
-    }
+        free_3darray(VMM_input_array, scal, 112);
+        free_3darray(result_list, scal, 112);
+        free_3darray(weight_array, scal, IMCcol);
+        free_image(test_images, test_images->image_point[0].number_of_rows, test_images->number_of_images);
+
+
+        printf("save image!!\n");
+        _CnnFF(cnn->C1, cnn->S2);
+        for (int ch_i = 0; ch_i < 4; ch_i++)
+        {
+            save_image(14, cnn->S2->y[ch_i]);
+            printf("\n");
+            printf("\n");
+        }
     freeConvLayer(cnn->C1);
+    
 
     // /*2nd convolution*/
     // int map_size = 3;
@@ -230,7 +238,7 @@ void main()
     // printf("input_2nd_size.columns: %d\n", input_2nd_size.columns);
     // printf("input_2nd_size.rows: %d\n", input_2nd_size.rows);
 
-    // freePoolLayer(cnn->S2);
+    freePoolLayer(cnn->S2);
 
     // _CnnSetup(cnn, input_size, output_size, 2);
     // printf("[+] CNN setup finished!\n");
@@ -311,7 +319,10 @@ void main()
     // {
     //     save_image(cnn->S4->input_height / 2, cnn->S4->y[i]);
     // }
-
+#ifndef ACORE
+    free(vmm);
+#endif
+    free(cnn);
 #ifdef ACORE
     test_pass();
     test_end();

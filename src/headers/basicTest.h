@@ -39,6 +39,13 @@ void load_bias(CovLayer *cc, uint8_t *bias);
 
 void Conv_image(CovLayer *conv_layer, PoolingLayer *pool_layer, uint8_t ***input_array,
                           int VMM_turns, int weights_number, int scaling, int layer_index);
+
+void conv_onthe_way(CovLayer *conv_layer, int scaling, uint8_t ***input_array, int layer_index,
+                    int* row_index, int* column_index, int i);
+
+void conv_onthe_end(CovLayer *conv_layer, int scaling, uint8_t ***input_array, int layer_index,
+                    int* row_index, int*column_index, int i, uint8_t leftover_number);
+
 void MACoperation(uint8_t ***input_array, uint8_t ***output_array, uint8_t ***weight_array,
                   int VMM_turns, int scaling);
 void save_image(int scale, uint8_t ***image_data);

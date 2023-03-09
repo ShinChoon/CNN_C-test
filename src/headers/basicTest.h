@@ -20,7 +20,7 @@ struct weight_map
 
 VMM *initializeVMM(Cnn *cnn);
 void weights_mapping(CovLayer *cc, uint8_t ***VMM_weights_map, int *weights_number, int scaling, int layer_index);
-void inputs_mapping(CovLayer *cc, MnistImage **images, uint8_t ***VMM_input_array, int *VMM_turns,
+void inputs_mapping(CovLayer *cc, uint8_t ***images, uint8_t ***VMM_input_array, int *VMM_turns,
                     int scaling);
 void assign_to_sub_array(uint8_t ***maplist, uint8_t *temp_input, int size_xx, int count_y, int scal);
 uint8_t ***generate_input_array(int scal, int size);
@@ -38,13 +38,13 @@ void load_weights(CovLayer *cc, uint8_t ****weights);
 void load_bias(CovLayer *cc, uint8_t *bias);
 
 void Conv_image(CovLayer *conv_layer, PoolingLayer *pool_layer, uint8_t ***input_array,
-                          int VMM_turns, int weights_number, int scaling, int layer_index);
+                int VMM_turns, int weights_number, int scaling, int layer_index);
 
 void conv_onthe_way(CovLayer *conv_layer, int scaling, uint8_t ***input_array, int layer_index,
-                    int* row_index, int* column_index, int i);
+                    int *row_index, int *column_index, int i);
 
 void conv_onthe_end(CovLayer *conv_layer, int scaling, uint8_t ***input_array, int layer_index,
-                    int* row_index, int*column_index, int i, uint8_t leftover_number);
+                    int *row_index, int *column_index, int i, uint8_t leftover_number);
 
 void MACoperation(uint8_t ***input_array, uint8_t ***output_array, uint8_t ***weight_array,
                   int VMM_turns, int scaling);

@@ -4,6 +4,8 @@
 #include <time.h>
 #include <stdint.h>
 #include "basicTest.h"
+#include "imagedata.h"
+#include "out_s2_debug.h"
 
 #ifdef ACORE
 #include "a-core-utils.h"
@@ -84,15 +86,26 @@ void FeedVMM_weights(uint8_t ***weight_array)
         page_weight = (int)(i / IMCrow) - 2;
         index_weight = i % IMCrow;
         feed = weight_array[0][page_weight][index_weight];
-#ifdef ACORE
-        write_VMM(i, feed);
-#endif
+        if (feed!=0)
+        {
+        #ifdef ACORE
+                write_VMM(i, feed);
+        #endif
+        }
     }
 }
 
 void FeedVMM_image(uint8_t ***VMMarray, uint8_t pagenumber, uint8_t scal)
 {
     uint8_t feed = 0;
+
+    // for (uint8_t i = 0; i < IMCrow; i++)
+    // {
+    //     feed = VMMarray[scal][pagenumber][i];
+    //     printf("%d ", feed);
+    // }
+    // printf("\n");
+
     for (uint8_t i = 0; i < IMCrow; i++)
     {
         feed = VMMarray[scal][pagenumber][i];
@@ -106,9 +119,9 @@ void VMMMACoperation(uint8_t ***result_list, int pagenumber, int scal)
     uint8_t result = 0;
     for (int h = 0; h < IMCcol; h++)
     {
-        #ifdef ACORE    
+#ifdef ACORE
         result = (uint8_t)read_VMM(h);
-        #endif
+#endif
         result_list[scal][pagenumber][h] = result;
         // printf("%d ", (int)(result_list[0][pagenumber][h]));
     }
@@ -118,138 +131,167 @@ void VMMMACoperation(uint8_t ***result_list, int pagenumber, int scal)
 void main()
 {
     printf("Welcome to A-Core for vmm test!\n");
+    // int test_list[36] = {0};
+    // int reassembly_list[2][18] = {0};
+    // int flag = 0;
+    // int st = 0;
+    // for(int i=0; i<36; i++)
+    // {
+    //     test_list[i] = i*2+i;
+    // }
+    // for (int i = 0; i < 36; i++)
+    // {
+    //     if((i/2)%2==0)
+    //     {
+    //         reassembly_list[0][st++] = test_list[i];
+    //     }
+    // }
 
-    /*Setup CNN*/
-    Cnn *cnn = calloc(1, sizeof(*cnn));
-    /*set up VMM*/
+    // for (int i = 0; i < 36; i++)
+    //     printf("%d ", test_list[i]);
+    // printf("\n");
+
+    // for (int i = 0; i < 18; i++)
+    //     printf("%d ", reassembly_list[0][i]);
+    // printf("\n");
+
+
+
+
+
+        /*Setup CNN*/
+        Cnn *cnn = calloc(1, sizeof(*cnn));
+
+        /*first convolution*/
+        /*set up VMM*/
     #ifdef ACORE
         reset_VMM();
     #else
         VMM *vmm = initializeVMM(cnn);
     #endif
 
+        int VMM_turns = 0;
+        int weights_number = 0;
+        int turn_number = 0;
+        int column_dex = 0;
+        int scal = 1; // scal for the 1st conv, as 2 in the 2nd convolution
+        int output_size = 10;
 
-    /*first convolution*/
+        printf("[+] Read data finished!\n");
 
-    // LabelArray test_labels = ReadLabels("mnist/t10k-labels-idx1-ubyte");
-    ImageArray test_images = _ReadImages("mnist/t10k-images-idx3-ubyte");
-    printf("[+] Read data finished!\n");
+        // Input image mat size {columns,rows}
+        MatSize input_size;
+        input_size.columns = 30;
+        input_size.rows = 30;
 
-    // Input image mat size {columns,rows}
-    MatSize input_size;
-    input_size.columns = test_images->image_point[0].number_of_columns;
-    input_size.rows = test_images->image_point[0].number_of_rows;
+        printf("[+] Input size: {%d,%d}\n", input_size.columns, input_size.rows);
 
-    printf("[+] Input size: {%d,%d}\n", input_size.columns, input_size.rows);
+        // Output Label array size {label_length} {10}
+        printf("[+] Output size: %d\n", output_size);
 
-    // Output Label array size {label_length} {10}
-    int output_size = 10;
-    printf("[+] Output size: %d\n", output_size);
-
-    _CnnSetup(cnn, input_size, output_size, 1);
-    printf("[+] CNN setup finished!\n");
-
-    // /*load weights from csv file, not needed anymore*/
-    // _ImportCnn(cnn, 1);
-    // printf("[+] Import CNN finished!\n");
-
-    /*map weigths and iamge as in IMC shape*/
-
-    int VMM_turns = 0;
-    int weights_number = 0;
-    int turn_number = 0;
-    int column_dex = 0;
-    /*Weights can be reused right????*/
-    MnistImage *input_list[] = {&(test_images->image_point[0])};
-
+        _CnnSetup(cnn, input_size, output_size, 1);
+        printf("[+] CNN setup finished!\n");
 
     /*below are for the 1st convolution*/
     /*weights*/
-    int scal = 1; // scal for the 1st conv, as 2 in the 2nd convolution
     uint8_t ***weight_array = alloc_3darray(scal, IMCcol, IMCrow);
     weights_mapping(cnn->C1, weight_array, &weights_number, scal, 1);
     /*remember to release the memory and produce cnn again after 1st MAC*/
     uint8_t ***VMM_input_array = generate_input_array(scal, 112);
     uint8_t ***result_list = generate_result_array(scal, 112);
-
+    uint8_t ***image_input = alloc_3darray(1, 30,30);
+    for(int i=0; i<30; i++)
+    for(int j=0; j<30; j++)
+    image_input[0][i][j] = myimagearray[0][i][j];
 
     printf("writing weights!\n");
     FeedVMM_weights(weight_array);
     printf("\n");
-
     /*image making values*/
     printf("inputs_mapping!!!!\n");
-    inputs_mapping(cnn->C1, input_list, VMM_input_array, &VMM_turns, scal);
+    inputs_mapping(cnn->C1, image_input, VMM_input_array, &VMM_turns, scal);
+
     printf("@@@@finish mapping\n");
     for (uint8_t i = 0; i < scal; i++)
-        /*foor loop by 4 here*/
-        {
-            for (int page_image = 0; page_image < VMM_turns; page_image++)
-            {
-                // printf("writing image\n");
-                FeedVMM_image(VMM_input_array, page_image, i);
-#ifdef ACORE
-                printf("reading\n");
-                VMMMACoperation(result_list, page_image, i); // feedVMM and write VMMmac should be looped by scal right?
+    /*foor loop by 4 here*/
+    {
+    for (int page_image = 0; page_image < VMM_turns; page_image++)
+    {
+    // printf("writing image\n");
+    FeedVMM_image(VMM_input_array, page_image, i);
+    // printf("reading\n");
+    #ifdef ACORE
+    VMMMACoperation(result_list, page_image, i); // feedVMM and write VMMmac should be looped by scal right?
+    #else
+    vmm->MACoperation(VMM_input_array, result_list, weight_array, page_image, scal);
+    #endif
+    }
+    }
+    printf("@@@@@@@@@@@@@Convimage: %d\n", VMM_turns);
+    Conv_image(cnn->C1, cnn->S2, result_list, VMM_turns, weights_number, scal, 1);
+    free_3darray(VMM_input_array, scal, VMM_turns);
+    free_3darray(result_list, scal, VMM_turns);
+    free_3darray(weight_array, scal, IMCcol);
 
-#else
-                vmm->MACoperation(VMM_input_array, result_list, weight_array, page_image, scal);
-#endif
-            }
-            printf("@@@@@@@@@@@@@Convimage: %d\n", VMM_turns);
-            Conv_image(cnn->C1, cnn->S2, result_list, VMM_turns, weights_number, scal, 1);
-        }
+    printf("save image!!\n");
+    _CnnFF(cnn->C1, cnn->S2);
+    for (int ch_i = 0; ch_i < 4; ch_i++)
+    {
+    save_image(14, cnn->S2->y[ch_i]);
+    printf("\n");
+    printf("\n");
+    }
 
-
-        free_3darray(VMM_input_array, scal, VMM_turns);
-        free_3darray(result_list, scal, VMM_turns);
-        free_3darray(weight_array, scal, IMCcol);
-        free_image(test_images, test_images->image_point[0].number_of_rows, test_images->number_of_images);
-
-
-        printf("save image!!\n");
-        _CnnFF(cnn->C1, cnn->S2);
-        for (int ch_i = 0; ch_i < 4; ch_i++)
-        {
-            save_image(14, cnn->S2->y[ch_i]);
-            printf("\n");
-            printf("\n");
-        }
-    
+    for (int ch_i = 0; ch_i < 4; ch_i++)
+    {
+    for (int i = 0; i < 28; i++)
+    {
+    for (int h = 0; h < 28; h++)
+        printf("%d ", cnn->C1->v[ch_i][i][h]);
+    printf("\n");
+    }
+    printf("\n");
+    }
 
     /*2nd convolution*/
+    /*set up VMM*/
+#ifdef ACORE
+    reset_VMM();
+#else
+    vmm = initializeVMM(cnn);
+#endif
     int map_size = 3;
     scal = 2;
     column_dex = 0;
     VMM_turns = 0;
     weights_number = 0;
+    uint8_t ***outputS2_list = alloc_3darray(4,
+                                             14,
+                                             14);
+
+    printf("outputS2_list generated!!");
+
+    for (int i = 0; i < 4; i++)
+        for (int j = 0; j < 14; j++)
+            for (int h = 0; h < 14; h++)
+                outputS2_list[i][j][h] = *(cnn->S2->y[i][j][h]);
+
+    freeConvLayer(cnn->C1); // after image generation
+    freePoolLayer(cnn->S2); // after image generation
+
     MatSize input_2nd_size;
-    uint8_t ***VMM_input_array2 = generate_input_array(scal, 96);
-    uint8_t ***result_list2 = generate_result_array(scal, 96);
     input_2nd_size.columns = (input_size.columns - map_size + 1) / 2;
     input_2nd_size.rows = (input_size.rows - map_size + 1) / 2;
-
-    ImageArray outputS2 = Output_image(input_2nd_size.columns,
-                            input_2nd_size.columns,
-                            cnn->S2->y, cnn->S2->output_channels);
-
-    MnistImage *outputS2_list[] = {&(outputS2->image_point[0]),
-                                   &(outputS2->image_point[1]),
-                                   &(outputS2->image_point[2]),
-                                   &(outputS2->image_point[3])};
-
-    printf("input_2nd_size.columns: %d\n", input_2nd_size.columns);
-    printf("input_2nd_size.rows: %d\n", input_2nd_size.rows);
-
-    freeConvLayer(cnn->C1);//after image generation
-    freePoolLayer(cnn->S2);//after image generation
-
-    _CnnSetup(cnn, input_size, output_size, 2);
+    _CnnSetup(cnn, input_2nd_size, output_size, 2);
     printf("[+] CNN setup finished!\n");
 
     uint8_t ***weight_array2 = alloc_3darray(scal, IMCcol, IMCrow);
-
     weights_mapping(cnn->C3, weight_array2, &weights_number, scal, 2);
+    uint8_t ***result_list2 = generate_result_array(scal, 96);
+    uint8_t ***VMM_input_array2 = generate_input_array(scal, 96);
+
+    printf("input_2nd_size.columns: %d\n", input_2nd_size.columns);
+    printf("input_2nd_size.rows: %d\n", input_2nd_size.rows);
 
     printf("writing weights!\n");
     FeedVMM_weights(weight_array2);
@@ -257,40 +299,52 @@ void main()
 
     printf("inputs_mapping!!!!\n");
     inputs_mapping(cnn->C3, outputS2_list, VMM_input_array2,
-                    &VMM_turns, scal);
+                   &VMM_turns, scal);
     printf("@@@@finish mapping\n");
     for (uint8_t i = 0; i < scal; i++)
     {
 
-            for (int page_image = 0; page_image < VMM_turns; page_image++)
-            {
-                FeedVMM_image(VMM_input_array2, page_image, i);
+        for (int page_image = 0; page_image < VMM_turns; page_image++)
+        {
+            // printf("writting: \n");
+            FeedVMM_image(VMM_input_array2, page_image, i);
 #ifdef ACORE
-                printf("reading\n");
-                VMMMACoperation(result_list2, page_image, i); // feedVMM and write VMMmac should be looped by scal right?
+            VMMMACoperation(result_list2, page_image, i); // feedVMM and write VMMmac should be looped by scal right?
 #else
-                vmm->MACoperation(VMM_input_array2, result_list2, weight_array2, page_image, scal);
+            vmm->MACoperation(VMM_input_array2, result_list2, weight_array2, page_image, scal);
 #endif
-            }
+        }
     }
     printf("@@@@@@@@@@@@@Convimage: %d\n", VMM_turns);
-    Conv_image(cnn->C3, cnn->S4, result_list2, VMM_turns, weights_number, scal,2);
-
-    free_3darray(VMM_input_array2, scal, 96);
-    free_3darray(result_list2, scal, 96);
-    free_3darray(weight_array2, scal, IMCcol);
-    free_image(outputS2, outputS2->image_point[0].number_of_rows, outputS2->number_of_images);
+    Conv_image(cnn->C3, cnn->S4, result_list2, VMM_turns, weights_number, scal, 2);
 
     printf("save image!!\n");
     _CnnFF(cnn->C3, cnn->S4);
 
-
-    for (int ch_i = 0; ch_i < 8; ch_i++)
+    for (int ch_i = 0; ch_i < 4; ch_i++)
     {
         save_image(6, cnn->S4->y[ch_i]);
         printf("\n");
         printf("\n");
     }
+    
+    for (int ch_i = 0; ch_i < 8; ch_i++)
+    {
+        for (int i = 0; i < 12; i++)
+        {
+            for (int h = 0; h < 12; h++)
+                printf("%d ", cnn->C3->v[ch_i][i][h]);
+            printf("\n");
+        }
+        printf("\n");
+    }
+
+
+    free_3darray(VMM_input_array2, scal, 96);
+    free_3darray(result_list2, scal, 96);
+    free_3darray(weight_array2, scal, IMCcol);
+    free_3darray(outputS2_list, 4, 14);
+    // free_3darray(image_input, 1, 30);
 
     freeConvLayer(cnn->C3);
     freePoolLayer(cnn->S4);
@@ -303,6 +357,6 @@ void main()
     test_pass();
     test_end();
 #endif
-            }
+}
 
 /*we could compare the Cov result with python model when the pool and RELU are implemented */

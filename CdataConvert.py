@@ -32,7 +32,7 @@ def float_to_int8(source, places=6):
     # to convert float into int8, skip the bianry string part
     source_abs = abs(source)
     answer = 0
-    base = 4 - 2**(-places+2)
+    base = 4 - 2**(-places+5)
     resolution = base*2/(2**places-1)
     answer = (int)((source+base)/resolution)
     return answer
@@ -80,7 +80,7 @@ def remove_enpty_space(_list):
 
 
 # test_data = load_data_shared()
-# resize_images = resize_images([test_data[0][17]])
+# resize_images = resize_images([test_data[0][0]])
 
 # # prolog
 # print('uint8_t imagearray[30][30] = {')

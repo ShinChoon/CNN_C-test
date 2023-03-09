@@ -92,9 +92,6 @@ CovLayer *InitialCovLayer(int input_width, int input_height, int map_size,
 
 	int outW = input_width - map_size + 1;
 	int outH = input_height - map_size + 1;
-	printf("@@@@@outW: %d\n", outW);
-	printf("@@@@@outH: %d\n", outH);
-
 	// covL->d = (uint8_t ***)malloc(output_channels * sizeof(uint8_t **));
 	covL->v = calloc(output_channels, sizeof(*(covL->v)));
 	// covL->y = malloc(output_channels * sizeof(*(covL->v)));
@@ -460,7 +457,7 @@ uint8_t ActivationReLu(uint8_t input, uint16_t bas)
 		return 63;
 	else if (sum <= 31)
 	{
-		return 31;
+		return 0;
 	}
 }
 void AvgPooling(uint8_t **output, MatSize output_size, uint8_t **input,
@@ -497,20 +494,29 @@ void MaxPooling(uint8_t ***output, MatSize output_size, uint8_t **input,
 
 	int i, j, m, n;
 	for (i = 0; i < outputH; i++)
+	{
+
 		for (j = 0; j < outputW; j++)
 		{
-			uint8_t* pMax = 0;
+			uint8_t *pMax = &(input[0][0]);//initalization!!!
 			uint8_t pNumber = 0;
 			for (m = i * map_size; m < i * map_size + map_size; m++)
+			{
+
 				for (n = j * map_size; n < j * map_size + map_size; n++)
+				{
+
 					if (input[m][n] > pNumber)
 					{
 						pMax = &(input[m][n]);
 						pNumber = input[m][n];
 					}
+				}
 
 			output[i][j] = pMax;
+			}
 		}
+	}
 }
 //
 uint8_t vecMulti(uint8_t *vec1, uint8_t *vec2, int vecL) //

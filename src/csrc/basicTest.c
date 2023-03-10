@@ -315,16 +315,16 @@ void weights_mapping(CovLayer *cc, uint8_t ***VMM_weights_map, int *weights_numb
         drift_y += 3 * input_channels / scaling;
     }
 
-    for (int i = 0; i < scaling; i++)
-    {
-        for (int j = 0; j < IMCcol; j++)
-        {
-            for (int z = 0; z < IMCrow; z++)
-                printf("%d ", VMM_weights_map[i][j][z]);
-            printf("\n");
-        }
-        printf("\n");
-    }
+    // for (int i = 0; i < scaling; i++)
+    // {
+    //     for (int j = 0; j < IMCcol; j++)
+    //     {
+    //         for (int z = 0; z < IMCrow; z++)
+    //             printf("%d ", VMM_weights_map[i][j][z]);
+    //         printf("\n");
+    //     }
+    //     printf("\n");
+    // }
 
     /*counting patten duplication times*/
     for (int i = 0; i < IMCcol; i++)
@@ -390,6 +390,8 @@ void inputs_mapping(CovLayer *cc, uint8_t ***images, uint8_t ***maplist, int *VM
                         for (int ch = 0; ch < cc->input_channels / scaling; ch++)
                         {
                             VMM_input[count_x] = images[ch + scaling * scal][r][c];
+                            // printf("%d,%d ", r, c);
+                            // printf("%d  ", VMM_input[count_x]);
                             count_x++;
                         }
 
@@ -441,6 +443,7 @@ void inputs_mapping(CovLayer *cc, uint8_t ***images, uint8_t ***maplist, int *VM
                 break;
         }
         printf("scal: %d\n", scal);
+        printf("\n");
     }
     // /*debug*/
     printf("\ncount_x: %d\n", count_x);
@@ -604,8 +607,8 @@ VMM *initializeVMM(Cnn *cnn)
     return vmm;
 }
 
-void MACoperation(uint8_t ***input_array, uint8_t ***output_array, uint8_t ***weight_array,
-                  int VMM_turns, int scaling)
+void MACoperation(CovLayer *conv_layer, uint8_t ***input_array, uint8_t ***output_array, uint8_t ***weight_array,
+                  int page_image, int scaling)
 {
     float fweight = 0;
     float fimage = 0;
@@ -615,7 +618,6 @@ void MACoperation(uint8_t ***input_array, uint8_t ***output_array, uint8_t ***we
     /*input array [78][36] weight_array[32][36]*/
     for (int sc = 0; sc < scaling; sc++)
     {
-        for (int i = 0; i < VMM_turns; i++)
         {
             // printf("calculate %d \n", i);
             for (int h = 0; h < IMCcol; h++)
@@ -626,11 +628,18 @@ void MACoperation(uint8_t ***input_array, uint8_t ***output_array, uint8_t ***we
                 /*loop for 36 times in each row*/
                 {
                     fweight = bin_float_for_image_weights(weight_array[sc][h][d], 1);
-                    fimage = bin_float_for_image_weights(input_array[sc][i][d], 0);
+                    fimage = bin_float_for_image_weights(input_array[sc][page_image][d], 0);
 
                     dotproduct += fweight * fimage;
                 }
-                output_array[sc][i][h] = float_bin_for_bias_result(dotproduct);
+                if (conv_layer->output_channels==4)
+                    dotproduct += bin_float_for_bias_result(bias_1[h % conv_layer->output_channels]);
+                else
+                    dotproduct += bin_float_for_bias_result(bias_2[h % conv_layer->output_channels]);
+
+                // if (dotproduct > 0.125000 && h % 4 == 0)
+                    // printf("%f ", dotproduct);
+                output_array[sc][page_image][h] = float_bin_for_bias_result(dotproduct);
                 dotproduct = 0;
             }
         }
@@ -638,7 +647,7 @@ void MACoperation(uint8_t ***input_array, uint8_t ***output_array, uint8_t ***we
 
     // // for (int sc = 0; sc < scaling; sc++)
     // {
-    //     // for (int i = 0; i < VMM_turns; i++)
+    //     for (int i = 0; 0< i < VMM_turns; i++)
     //     {
     //         // printf("calculate %d \n", i);
     //         // for (int h = 0; h < IMCcol; h++)
@@ -648,17 +657,13 @@ void MACoperation(uint8_t ***input_array, uint8_t ***output_array, uint8_t ***we
     //             for (int d = 0; d < IMCrow; d++)
     //             /*loop for 36 times in each row*/
     //             {
-    //                 fweight = bin_float_for_image_weights(weight_array[0][0][d], 1);
-    //                 // fimage = bin_float_for_image_weights(input_array[0][0][d], 0);
-
-    //                 printf("w: %.3f ", fweight);
-    //                 // printf("i: %.3f ", fimage);
+    //                 fweight = bin_float_for_image_weights(weight_array[0][i][d], 1);
+    //                 // fimage = bin_float_for_image_weights(input_array[0][i][d], 0);
+    //                 if (fweight != 0)
+    //                     printf("%.3f  ", fweight);
     //             }
-    //             printf("\n");
     //         }
-    //         printf("\n");
     //     }
-    //     printf("\n");
     // }
 
     // /*create file for test*/
@@ -724,10 +729,13 @@ void Conv_image(CovLayer *conv_layer, PoolingLayer *pool_layer, uint8_t ***input
 
                         if (layer_index == 1)
                             conv_layer->v[d][row_index][column_index] = ActivationReLu(mac_in_end,
-                                                                                       bias_1[d]);
+                                                                                       0);
                         else
+                        {
+                            mac_in_end -= bias_2[d];
                             conv_layer->v[d][row_index][column_index] = ActivationReLu(mac_in_end,
-                                                                                       bias_2[d]);
+                                                                                       0);
+                        }
                         // printf("mac_in_end: %d\n", (int)(mac_in_end*1000));
                         mac_in_end = 0;
                     }

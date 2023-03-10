@@ -442,11 +442,9 @@ uint8_t ActivationSigma(uint8_t input, uint8_t bas) // sigma activatiion functio
 /**********************************************************************/
 uint8_t ActivationReLu(uint8_t input, uint16_t bas)
 {
-	int8_t _bas = 0; // range(0,62) -> range(-31, 31)
 	int8_t temp = 0;
 	int8_t sum = 0;
-	_bas = bas - 31;
-	temp = input + _bas;
+	temp = input;
 	sum = temp;
 
 	if ((sum > 31) && (sum <= 63))
@@ -457,7 +455,7 @@ uint8_t ActivationReLu(uint8_t input, uint16_t bas)
 		return 63;
 	else if (sum <= 31)
 	{
-		return 0;
+		return 31;
 	}
 }
 void AvgPooling(uint8_t **output, MatSize output_size, uint8_t **input,

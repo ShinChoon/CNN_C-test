@@ -79,160 +79,161 @@ def remove_enpty_space(_list):
     return w22
 
 
-# test_data = load_data_shared()
-# resize_images = resize_images([test_data[0][0]])
+test_data = load_data_shared()
+resize_images = resize_images([test_data[0][0]])
 
+# prolog
+print('uint8_t imagearray[30][30] = {')
+
+# data
+for row in resize_images:
+    for line in row:
+        print('{')
+        for number in line:
+            number = convert_float_int8(number, False)
+            if(number !=0):
+                print('%d, ' % number)
+        print('}, ')
+
+# epilog
+print('};')
+
+# rainfall = pd.read_csv('output/param_decoded.csv', sep=',', header=None)
+# sized_data = rainfall[0:111]
+
+# smessage = sized_data.values
+
+# weights_1 = []
+# weights_map_1 = []
+
+# bias_1 = []
+# bias_map_1 = []
+
+# weights_2 = []
+# sub_weights_map = []
+# weights_map_2 = []
+
+
+# bias_2 = []
+# bias_map_2 = []
+
+# counter = 0
+
+
+# for i in range(0, 12):
+#     w = smessage[i][0].split(']')
+#     w = w[0].split('[')
+#     ww = remove_enpty_space(w)
+#     ww = ww[0].split(' ')
+#     ww = remove_enpty_space(ww)
+
+#     weights_1.append(ww)
+
+#     if((i+1)%3==0)and(i>0):
+#         weights_map_1.append(weights_1)
+#         weights_1 = []
+
+# weights_map_1 = converstring_int_list(weights_map_1)
+# # print("weights_map_1: ", np.shape(weights_map_1))
 # # prolog
-# print('uint8_t imagearray[30][30] = {')
+
+# print("#ifndef WEIGHTS_BIAS_H")
+# print("#define WEIGHTS_BIAS_H")
+# print("#include <stdint.h>")
+
+# print('uint8_t weights_map_1[4][1][3][3] = {')
 
 # # data
-# for row in resize_images:
-#     for line in row:
+# for map in weights_map_1:
+#     print('{')
+#     print('{')
+#     for line in map:
 #         print('{')
 #         for number in line:
-#             number = convert_float_int8(number, False)
+#             number = convert_float_int8(number, True)
 #             print('%d, ' % number)
 #         print('}, ')
+
+#     print('},')
+#     print('},')
 
 # # epilog
 # print('};')
 
-rainfall = pd.read_csv('output/param_decoded.csv', sep=',', header=None)
-sized_data = rainfall[0:111]
+# b = smessage[12][0].split(']')
+# b = b[0].split('[')
+# bb = remove_enpty_space(b)
+# bb = bb[0].split(' ')
+# bias_1 = remove_enpty_space(bb)
+# bias_1 = converstring_int_list(bias_1)
+# # print("bias_1: ", np.shape(bias_1))
 
-smessage = sized_data.values
+# # prolog
+# print('uint8_t bias_1[4] = {')
 
-weights_1 = []
-weights_map_1 = []
+# # data
+# for ele in bias_1:
+#     ele = float_bin(ele)
+#     print('%d, ' % ele)
+# # epilog
+# print('};')
 
-bias_1 = []
-bias_map_1 = []
+# for i in range(13, 109):
+#     w = smessage[i][0].split(']')
+#     w = w[0].split('[')
+#     ww = remove_enpty_space(w)
+#     ww = ww[0].split(' ')
+#     ww = remove_enpty_space(ww)
 
-weights_2 = []
-sub_weights_map = []
-weights_map_2 = []
+#     weights_2.append(ww)
 
+# weights_map_2 =  np.reshape(weights_2,(8,4,3,3))
+# weights_map_2 = converstring_int_list(weights_map_2)
+# # print("weights_map_2: ", np.shape(weights_map_2))
 
-bias_2 = []
-bias_map_2 = []
+# # prolog
+# print('uint8_t weights_map_2[8][4][3][3] = {')
 
-counter = 0
-
-
-for i in range(0, 12):
-    w = smessage[i][0].split(']')
-    w = w[0].split('[')
-    ww = remove_enpty_space(w)
-    ww = ww[0].split(' ')
-    ww = remove_enpty_space(ww)
-
-    weights_1.append(ww)
-
-    if((i+1)%3==0)and(i>0):
-        weights_map_1.append(weights_1)
-        weights_1 = []
-
-weights_map_1 = converstring_int_list(weights_map_1)
-# print("weights_map_1: ", np.shape(weights_map_1))
-# prolog
-
-print("#ifndef WEIGHTS_BIAS_H")
-print("#define WEIGHTS_BIAS_H")
-print("#include <stdint.h>")
-
-print('uint8_t weights_map_1[4][1][3][3] = {')
-
-# data
-for map in weights_map_1:
-    print('{')
-    print('{')
-    for line in map:
-        print('{')
-        for number in line:
-            number = convert_float_int8(number, True)
-            print('%d, ' % number)
-        print('}, ')
-
-    print('},')
-    print('},')
-
-# epilog
-print('};')
-
-b = smessage[12][0].split(']')
-b = b[0].split('[')
-bb = remove_enpty_space(b)
-bb = bb[0].split(' ')
-bias_1 = remove_enpty_space(bb)
-bias_1 = converstring_int_list(bias_1)
-# print("bias_1: ", np.shape(bias_1))
-
-# prolog
-print('uint8_t bias_1[4] = {')
-
-# data
-for ele in bias_1:
-    ele = float_bin(ele)
-    print('%d, ' % ele)
-# epilog
-print('};')
-
-for i in range(13, 109):
-    w = smessage[i][0].split(']')
-    w = w[0].split('[')
-    ww = remove_enpty_space(w)
-    ww = ww[0].split(' ')
-    ww = remove_enpty_space(ww)
-
-    weights_2.append(ww)
-
-weights_map_2 =  np.reshape(weights_2,(8,4,3,3))
-weights_map_2 = converstring_int_list(weights_map_2)
-# print("weights_map_2: ", np.shape(weights_map_2))
-
-# prolog
-print('uint8_t weights_map_2[8][4][3][3] = {')
-
-# data
-for out_ch in weights_map_2:
-    print('{')
-    for in_ch in out_ch:
-        print('{')
-        for line in in_ch:
-            print('{')
-            for number in line:
-                number = convert_float_int8(number, True)
-                print('%d, ' % number)
-            print('}, ')
-        print('}, ')
-    print('},')
-# epilog
-print('};')
+# # data
+# for out_ch in weights_map_2:
+#     print('{')
+#     for in_ch in out_ch:
+#         print('{')
+#         for line in in_ch:
+#             print('{')
+#             for number in line:
+#                 number = convert_float_int8(number, True)
+#                 print('%d, ' % number)
+#             print('}, ')
+#         print('}, ')
+#     print('},')
+# # epilog
+# print('};')
 
 
-for i in range(109, 111):
-    b = smessage[i][0].split(']')
-    b = b[0].split('[')
-    bb = remove_enpty_space(b)
-    bb = bb[0].split(' ')
-    bb = remove_enpty_space(bb)
+# for i in range(109, 111):
+#     b = smessage[i][0].split(']')
+#     b = b[0].split('[')
+#     bb = remove_enpty_space(b)
+#     bb = bb[0].split(' ')
+#     bb = remove_enpty_space(bb)
 
-    bias_2.append(bb)
-for i in bias_2[1]:
-    bias_2[0].append(i)
-bias_map_2 = bias_2
+#     bias_2.append(bb)
+# for i in bias_2[1]:
+#     bias_2[0].append(i)
+# bias_map_2 = bias_2
 
-bias_map_2 = np.reshape(bias_map_2[0], (8))
-bias_map_2 = converstring_int_list(bias_map_2)
-# print("bias_map_2: ", np.shape(bias_map_2))
+# bias_map_2 = np.reshape(bias_map_2[0], (8))
+# bias_map_2 = converstring_int_list(bias_map_2)
+# # print("bias_map_2: ", np.shape(bias_map_2))
 
-# prolog
-print('uint8_t bias_2[8] = {')
+# # prolog
+# print('uint8_t bias_2[8] = {')
 
-# data
-for ele in bias_map_2:
-    ele = float_bin(ele)
-    print('%d, ' % ele)
-# epilog
-print('};')
-print("#endif")
+# # data
+# for ele in bias_map_2:
+#     ele = float_bin(ele)
+#     print('%d, ' % ele)
+# # epilog
+# print('};')
+# print("#endif")

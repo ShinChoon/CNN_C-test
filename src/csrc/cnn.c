@@ -447,15 +447,15 @@ uint8_t ActivationReLu(uint8_t input, uint16_t bas)
 	temp = input;
 	sum = temp;
 
-	if ((sum > 31) && (sum <= 63))
+	if ((sum > 32) && (sum <= 63))
 	{
 		return sum;
 	}
 	if (sum > 63)
 		return 63;
-	else if (sum <= 31)
+	else if (sum <= 32)
 	{
-		return 31;
+		return 32;
 	}
 }
 void AvgPooling(uint8_t **output, MatSize output_size, uint8_t **input,

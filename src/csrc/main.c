@@ -133,7 +133,7 @@ float bin_float_for_activation(uint8_t number)
     int sign = 1;
     float base = 0.125; // 2**(-4))
     float answer_in = 0;
-    int8_t _number = number-31;
+    int8_t _number = number-32;
 
     base = 0.125; // 2^-6 instead of 2^-4
     // base = 0.03125; // 2**(-5)
@@ -229,7 +229,7 @@ void main()
     for (uint8_t i = 0; i < scal; i++)
     /*foor loop by 4 here*/
     {
-    for (int page_image = 0; page_image < 100; page_image++)
+    for (int page_image = 0; page_image < VMM_turns; page_image++)
     {
     // printf("writing image\n");
     FeedVMM_image(VMM_input_array, page_image, i);
@@ -251,13 +251,12 @@ void main()
 
     printf("save image!!\n");
     _CnnFF(cnn->C1, cnn->S2);
-    for (int ch_i = 0; ch_i < 4; ch_i++)
-    {
-    save_image(14, cnn->S2->y[ch_i]);
-    printf("\n");
-    printf("\n");
-    }
-
+    // for (int ch_i = 0; ch_i < 4; ch_i++)
+    // {
+    // save_image(14, cnn->S2->y[ch_i]);
+    // printf("\n");
+    // printf("\n");
+    // }
     for (int ch_i = 0; ch_i < 4; ch_i++)
     {
     for (int i = 0; i < 28; i++)

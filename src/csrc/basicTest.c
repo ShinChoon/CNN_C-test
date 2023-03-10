@@ -645,23 +645,24 @@ void MACoperation(CovLayer *conv_layer, uint8_t ***input_array, uint8_t ***outpu
         }
     }
 
-    // // for (int sc = 0; sc < scaling; sc++)
+    // for (int sc = 0; sc < scaling; sc++)
     // {
-    //     for (int i = 0; 0< i < VMM_turns; i++)
+    //     // for (int i = 0; 0< i < VMM_turns; i++)
     //     {
     //         // printf("calculate %d \n", i);
-    //         // for (int h = 0; h < IMCcol; h++)
+    //         for (int h = 0; h < IMCcol; h++)
     //         /*loop for 32 times in each column*/
     //         {
     //             /*parallel MAC will end here (I hope so!)*/
     //             for (int d = 0; d < IMCrow; d++)
     //             /*loop for 36 times in each row*/
     //             {
-    //                 fweight = bin_float_for_image_weights(weight_array[0][i][d], 1);
-    //                 // fimage = bin_float_for_image_weights(input_array[0][i][d], 0);
-    //                 if (fweight != 0)
-    //                     printf("%.3f  ", fweight);
+    //                 // fweight = bin_float_for_image_weights(weight_array[0][h][d], 1);
+    //                 fimage = bin_float_for_image_weights(input_array[0][page_image][d], 0);
+    //                 // if (fimage != 0)
+    //                 // printf("%.2f ", fimage);
     //             }
+    //             // printf("@\n");
     //         }
     //     }
     // }

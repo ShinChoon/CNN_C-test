@@ -632,14 +632,14 @@ void MACoperation(CovLayer *conv_layer, uint8_t ***input_array, uint8_t ***outpu
 
                     dotproduct += fweight * fimage;
                 }
-                if (conv_layer->output_channels==4)
-                    dotproduct += bin_float_for_bias_result(bias_1[h % conv_layer->output_channels]);
+                if (conv_layer->output_channels==4) // no need to process bias right??
+                    dotproduct += bias_1[h % conv_layer->output_channels];
                 else
-                    dotproduct += bin_float_for_bias_result(bias_2[h % conv_layer->output_channels]);
+                    dotproduct += bias_2[h % conv_layer->output_channels];
 
-                // if (dotproduct > 0.125000 && h % 4 == 0)
+                // if (h % 4 == 0)
                     // printf("%f ", dotproduct);
-                output_array[sc][page_image][h] = float_bin_for_bias_result(dotproduct);
+                output_array[sc][page_image][h] = float_bin_for_bias_result(dotproduct>0?dotproduct:0);
                 dotproduct = 0;
             }
         }
@@ -657,10 +657,10 @@ void MACoperation(CovLayer *conv_layer, uint8_t ***input_array, uint8_t ***outpu
     //             for (int d = 0; d < IMCrow; d++)
     //             /*loop for 36 times in each row*/
     //             {
-    //                 // fweight = bin_float_for_image_weights(weight_array[0][h][d], 1);
-    //                 fimage = bin_float_for_image_weights(input_array[0][page_image][d], 0);
-    //                 // if (fimage != 0)
-    //                 // printf("%.2f ", fimage);
+    //                 fweight = bin_float_for_image_weights(weight_array[0][h][d], 1);
+    //                 // fimage = bin_float_for_image_weights(input_array[0][page_image][d], 0);
+    //                 if (fweight != 0)
+    //                     printf("%.2f ", fweight);
     //             }
     //             // printf("@\n");
     //         }
@@ -729,8 +729,7 @@ void Conv_image(CovLayer *conv_layer, PoolingLayer *pool_layer, uint8_t ***input
                         // printf("%d  ", h + d - conv_layer->output_channels + 1);
 
                         if (layer_index == 1)
-                            conv_layer->v[d][row_index][column_index] = ActivationReLu(mac_in_end,
-                                                                                       0);
+                            conv_layer->v[d][row_index][column_index] = mac_in_end;
                         else
                         {
                             mac_in_end -= bias_2[d];
@@ -768,10 +767,10 @@ void Conv_image(CovLayer *conv_layer, PoolingLayer *pool_layer, uint8_t ***input
                             // printf("d:%d, row_index: %d, *column_index: %d\n", row_index ,* column_index);
                             if (layer_index == 1)
                                 conv_layer->v[d][row_index][column_index] = ActivationReLu(mac_in_process,
-                                                                                           bias_1[d]);
+                                                                                           0);
                             else
                                 conv_layer->v[d][row_index][column_index] = ActivationReLu(mac_in_process,
-                                                                                           bias_2[d]);
+                                                                                           0);
                             // printf("mac_in_process: %d\n", (int)(mac_in_process * 1000));
                             mac_in_process = 0;
                         }
@@ -811,10 +810,10 @@ void Conv_image(CovLayer *conv_layer, PoolingLayer *pool_layer, uint8_t ***input
 
                         if (layer_index == 1)
                             conv_layer->v[d][row_index][column_index] = ActivationReLu(mac_in_process,
-                                                                                       bias_1[d]);
+                                                                                       0);
                         else
                             conv_layer->v[d][row_index][column_index] = ActivationReLu(mac_in_process,
-                                                                                       bias_2[d]);
+                                                                                       0);
 
                         // printf("mac_in_process: %d\n", (int)(mac_in_process * 1000));
                         mac_in_process = 0;

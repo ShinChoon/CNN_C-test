@@ -21,7 +21,7 @@ struct weight_map
 VMM *initializeVMM(Cnn *cnn);
 void weights_mapping(CovLayer *cc, uint8_t ***VMM_weights_map, int *weights_number, int scaling, int layer_index);
 void inputs_mapping(CovLayer *cc, uint8_t ***images, uint8_t ***VMM_input_array, int *VMM_turns,
-                    int scaling);
+                    int scaling, int layer_index);
 void assign_to_sub_array(uint8_t ***maplist, uint8_t *temp_input, int size_xx, int count_y, int scal);
 uint8_t ***generate_input_array(int scal, int size);
 uint8_t ***generate_result_array(int scal, int VMM_turns);

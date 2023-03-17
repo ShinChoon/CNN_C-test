@@ -10,6 +10,7 @@ uint8_t float_int8(float source)
 }
 
 uint8_t float_bin_for_bias_result(float _number)
+/*take the functionality of quantization in RELU*/
 {
     float number = _number;
     if (number >= 3.9375) // 4-2**(-4)

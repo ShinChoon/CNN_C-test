@@ -28,7 +28,7 @@ def float_bin(number, places=8):
     return result
 
 
-def float_to_int8(source, places=8):
+def float_to_int8(number, places=8):
     answer_in = 0
     # corresponding to python but leave space for 2 sign bits
     base = 2**(-8+2)

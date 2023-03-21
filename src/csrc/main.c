@@ -193,6 +193,7 @@ void main()
         for (int j = 0; j < 30; j++)
             image_input[0][i][j] = myimagearray[0][i][j];
 
+    // free_3darray(image_input, 1, 30);
     printf("writing weights!\n");
     FeedVMM_weights(weight_array);
     printf("\n");
@@ -362,7 +363,6 @@ void main()
         free_3darray(result_list2, scal, VMM_turns);
         free_3darray(weight_array2, scal, IMCcol);
         free_3darray(outputS2_list, 4, 14);
-        // free_3darray(image_input, 1, 30);
         freeConvLayer(cnn->C3);
         freePoolLayer(cnn->S4);
         

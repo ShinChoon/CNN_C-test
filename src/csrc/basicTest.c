@@ -644,7 +644,7 @@ void MACoperation(CovLayer *conv_layer, uint8_t ***input_array, uint8_t ***outpu
         // printf("\n");
         // if (h % 4 == 0)
         // printf("%f ", dotproduct);
-        output_array[sc][page_image][h] = float_bin_for_bias_result(dotproduct > 0 ? dotproduct : 0);
+        output_array[sc][page_image][h] = float_bin_for_bias_result(dotproduct, 0);
         dotproduct = 0;
     }
 
@@ -733,14 +733,14 @@ void Conv_image(CovLayer *conv_layer, PoolingLayer *pool_layer, uint8_t ***input
 
                         if (layer_index == 1)
                         {
-                            mac_in_end += float_bin_for_bias_result(bias_1[d]);
-                            conv_layer->v[d][row_index][column_index] = mac_in_end;
+                            mac_in_end += float_bin_for_bias_result(bias_1[d],1);
+                            conv_layer->v[d][row_index][column_index] = mac_in_end>54?mac_in_end:0;
                         }
 
                         else
                         {
-                            mac_in_end += float_bin_for_bias_result(bias_2[d]);
-                            conv_layer->v[d][row_index][column_index] = mac_in_end;
+                            mac_in_end += float_bin_for_bias_result(bias_2[d],1);
+                            conv_layer->v[d][row_index][column_index] = mac_in_end > 54 ? mac_in_end : 0;
                         }
                         // printf("mac_in_end: %d\n", (int)(mac_in_end*1000));
                         mac_in_end = 0;
@@ -773,13 +773,13 @@ void Conv_image(CovLayer *conv_layer, PoolingLayer *pool_layer, uint8_t ***input
                             // printf(" @@@row_: %d,column_: %d ", row_index ,column_index);
                             if (layer_index == 1)
                             {
-                                mac_in_end += float_bin_for_bias_result(bias_1[d]);
-                                conv_layer->v[d][row_index][column_index] = mac_in_end;
+                                mac_in_end += float_bin_for_bias_result(bias_1[d],1);
+                                conv_layer->v[d][row_index][column_index] = mac_in_end > 54 ? mac_in_end : 0;
                             }
                             else
                             {
-                                mac_in_end += float_bin_for_bias_result(bias_2[d]);
-                                conv_layer->v[d][row_index][column_index] = mac_in_end;
+                                mac_in_end += float_bin_for_bias_result(bias_2[d],1);
+                                conv_layer->v[d][row_index][column_index] = mac_in_end > 54 ? mac_in_end : 0;
                             }
                             // printf("row_:%d, column_:%d  ", row_index, column_index);
                             mac_in_end = 0;
@@ -819,13 +819,13 @@ void Conv_image(CovLayer *conv_layer, PoolingLayer *pool_layer, uint8_t ***input
 
                         if (layer_index == 1)
                         {
-                            mac_in_process += float_bin_for_bias_result(bias_1[d]);
-                            conv_layer->v[d][row_index][column_index] = mac_in_process;
+                            mac_in_process += float_bin_for_bias_result(bias_1[d],1);
+                            conv_layer->v[d][row_index][column_index] = mac_in_process > 54 ? mac_in_process : 0;
                         }
                         else
                         {
-                            mac_in_process += float_bin_for_bias_result(bias_2[d]);
-                            conv_layer->v[d][row_index][column_index] = mac_in_process;
+                            mac_in_process += float_bin_for_bias_result(bias_2[d],1);
+                            conv_layer->v[d][row_index][column_index] = mac_in_process > 54 ? mac_in_process : 0;
                         }
                         // convolution might have some issues here
                         // printf("row_:%d, column_:%d  ", row_index, column_index);

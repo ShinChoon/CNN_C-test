@@ -168,19 +168,6 @@ uint8_t **MatEdgeShrink(uint8_t **mat, MatSize mat_size, int shrinkc, int shrink
 	return res;
 }
 
-void MatSaving(uint8_t **mat, MatSize mat_size, const char *filename)
-{
-	FILE *fp = NULL;
-	fp = fopen(filename, "wb");
-	if (fp == NULL)
-		printf("write file failed\n");
-
-	int i;
-	for (i = 0; i < mat_size.rows; i++)
-		fwrite(mat[i], sizeof(uint8_t), mat_size.columns, fp);
-	fclose(fp);
-}
-
 void MatAdd(uint8_t **res, uint8_t **mat1, MatSize mat_size1, uint8_t **mat2, MatSize mat_size2)
 {
 	/*accumulation from 2D to 1D*/

@@ -53,15 +53,6 @@ void TestMat()
 	MatSize cov3size={srcSize.columns-(map_size.columns-1),srcSize.rows-(map_size.rows-1)};
 	uint8_t** cov3=MatCov(map,map_size,src,srcSize,VALID);
 
-	MatSaving(src,srcSize,"output/src.ma");
-	MatSaving(map,map_size,"output/map.ma");
-	MatSaving(cov1,cov1size,"output/cov1.ma");
-	//MatSaving(cov2,cov2size,"output/cov2.ma");
-	MatSaving(cov3,cov3size,"output/cov3.ma");
-
-	uint8_t** sample=MatUpSample(src,srcSize,2,2);
-	MatSize samSize={srcSize.columns*2,srcSize.rows*2};
-	MatSaving(sample,samSize,"output/sam.ma");
 }
 
 void TestMat1()
@@ -106,13 +97,6 @@ void TestMat1()
 	MatAdd(cov1,cov1,covsize,cov3,covsize);
 
 
-	MatSaving(src,srcSize,"output/src.ma");
-	MatSaving(map1,map_size,"output/map1.ma");
-	MatSaving(map2,map_size,"output/map2.ma");
-	MatSaving(map3,map_size,"output/map3.ma");
-	MatSaving(cov1,covsize,"output/cov1.ma");
-	MatSaving(cov2,covsize,"output/cov2.ma");
-	MatSaving(cov3,covsize,"output/cov3.ma");
 
 }
 

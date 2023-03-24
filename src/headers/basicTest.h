@@ -10,7 +10,7 @@ typedef struct VMMStructure
     int cols;
     int rows;
     Cnn *Cnn;
-    void (*MACoperation)(CovLayer*,uint8_t ***, uint8_t ***, uint8_t ***, int, int);
+    void (*MACoperation)(CovLayer *, uint8_t ***, uint8_t ***, uint8_t ***, int, int);
 } VMM;
 
 struct weight_map

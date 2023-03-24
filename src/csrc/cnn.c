@@ -482,7 +482,7 @@ void AvgPooling(uint8_t **output, MatSize output_size, uint8_t **input,
 
 void MaxPooling(uint8_t ***output, MatSize output_size, uint8_t **input,
 				MatSize input_size, int map_size)
-			/*it is just address storage */
+/*it is just address storage */
 {
 	int outputW = input_size.columns / map_size;
 	int outputH = input_size.rows / map_size;
@@ -496,7 +496,7 @@ void MaxPooling(uint8_t ***output, MatSize output_size, uint8_t **input,
 
 		for (j = 0; j < outputW; j++)
 		{
-			uint8_t *pMax = &(input[0][0]);//initalization!!!
+			uint8_t *pMax = &(input[0][0]); // initalization!!!
 			uint8_t pNumber = 0;
 			for (m = i * map_size; m < i * map_size + map_size; m++)
 			{
@@ -511,7 +511,7 @@ void MaxPooling(uint8_t ***output, MatSize output_size, uint8_t **input,
 					}
 				}
 
-			output[i][j] = pMax;
+				output[i][j] = pMax;
 			}
 		}
 	}

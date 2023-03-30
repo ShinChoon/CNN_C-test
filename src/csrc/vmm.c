@@ -30,29 +30,30 @@ uint8_t float_bin_for_bias_result(float _number)
 float bin_float_for_image_weights(uint8_t number, int isweight)
 {
     int sign = 1;
-    float base = 0.0625; // 2**(-6)) default for image, because its absolute value range is (0,4)
+    float base = 0.015625; // 2**(-6)) default for weights, because its absolute value range is (0,1)
     float answer_in = 0;
     uint8_t _number = number;
     if (isweight)
     {
         if (_number > 128)
         {
-            _number -= 128;
             sign = -1;
+            _number -= 128;
         }
         else if (_number > 64) // tested with weight precision
         {
-            _number -= 64;
             sign = 1;
+            _number -= 64;
         }
         else
             sign = 0;
+        answer_in = (float)(_number * base * sign);
     }
     else
     {
-        base = 0.00390625; // 2**(-8)
+        base = 0.015625; // 2**(-8)
+        answer_in = (float)(_number) * base * sign;
     }
 
-    answer_in = (float)(_number * base * sign);
     return answer_in;
 }

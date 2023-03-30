@@ -22,9 +22,9 @@
 #define OUTPUT_ADC A_CORE_AXI4LVMM + 0x0C
 #endif
 
-#ifdef ACORE
 void write_VMM(int address, uint8_t data)
 {
+#ifdef ACORE
     int high_bits = (int)(address / 256);
     int low_bits = address - high_bits * 256;
 
@@ -38,45 +38,44 @@ void write_VMM(int address, uint8_t data)
     info |= (volatile uint8_t)low_bits << 0;
 
     gpo_write((volatile uint32_t *)(SRAM_DIN_CONTROL_ADDR), info);
+#endif
 }
 
-#endif
-
-#ifdef ACORE
 void set_readmode()
 {
+#ifdef ACORE
     volatile uint32_t info = 0;
     info |= (1UL << 13);  // rd
     info &= ~(1UL << 14); // wr
     /*reset read and write mode*/
     gpo_write((volatile uint32_t *)(SRAM_DIN_CONTROL_ADDR), info); /*set read mode*/
-}
 #endif
+}
 
-#ifdef ACORE
 volatile uint8_t read_VMM(int index)
 {
+#ifdef ACORE
     set_readmode();
     delay(1);
     // volatile uint32_t *gpi_addr = (volatile uint32_t *)(OUTPUT_ADC+index*4);
     volatile uint8_t info = (volatile uint8_t)gpi_read((volatile uint32_t *)(OUTPUT_ADC + index * 4));
     return info;
-}
 #endif
+}
 
-#ifdef ACORE
 void reset_VMM()
 {
+#ifdef ACORE
     volatile uint32_t info = 0;
     // info |= (1UL << 12); // rd
     info &= ~(1UL << 14); // wr
     info &= ~(1UL << 13); // rd
 
     gpo_write((volatile uint32_t *)(A_CORE_AXI4LVMM + 0x4), info);
-}
 #endif
+}
 
-void FeedVMM_weights(uint8_t ***weight_array)
+void FeedVMM_weights(uint8_t ***weight_array, uint8_t scal)
 {
     int page_weight = 0;
     int index_weight = 0;
@@ -85,7 +84,7 @@ void FeedVMM_weights(uint8_t ***weight_array)
     {
         page_weight = (int)(i / IMCrow) - 2;
         index_weight = i % IMCrow;
-        feed = weight_array[0][page_weight][index_weight];
+        feed = weight_array[scal][page_weight][index_weight];
         if (feed != 0)
         {
 #ifdef ACORE
@@ -98,14 +97,6 @@ void FeedVMM_weights(uint8_t ***weight_array)
 void FeedVMM_image(uint8_t ***VMMarray, uint8_t pagenumber, uint8_t scal)
 {
     uint8_t feed = 0;
-
-    // for (uint8_t i = 0; i < IMCrow; i++)
-    // {
-    //     feed = VMMarray[scal][pagenumber][i];
-    //     printf("%d ", feed);
-    // }
-    // printf("\n");
-
     for (uint8_t i = 0; i < IMCrow; i++)
     {
         feed = VMMarray[scal][pagenumber][i];
@@ -123,7 +114,7 @@ void VMMMACoperation(uint8_t ***result_list, int pagenumber, int scal)
         result = (uint8_t)read_VMM(h);
 #endif
         result_list[scal][pagenumber][h] = result;
-        // printf("%d ", (int)(result_list[0][pagenumber][h]));
+        // printf("%d ", (int)(result_list[scal][pagenumber][h]));
     }
     // printf("\n");
 }
@@ -181,92 +172,93 @@ void main()
     _CnnSetup(cnn, input_size, output_size, 1);
     printf("[+] CNN setup finished!\n");
 
-        /*below are for the 1st convolution*/
-        /*weights*/
-        uint8_t ***weight_array = alloc_3darray(scal, IMCcol, IMCrow);
-        weights_mapping(cnn->C1, weight_array, &weights_number, scal, 1);
-        /*remember to release the memory and produce cnn again after 1st MAC*/
-        uint8_t ***VMM_input_array = generate_input_array(scal, 112);
-        uint8_t ***result_list = generate_result_array(scal, 112);
-        uint8_t ***image_input = alloc_3darray(1, 30, 30);
-        for (int i = 0; i < 30; i++)
-            for (int j = 0; j < 30; j++)
-                image_input[0][i][j] = myimagearray[0][i][j];
+    /*below are for the 1st convolution*/
+    /*weights*/
+    uint8_t ***weight_array = alloc_3darray(scal, IMCcol, IMCrow);
+    weights_mapping(cnn->C1, weight_array, &weights_number, scal, 1);
+    /*remember to release the memory and produce cnn again after 1st MAC*/
+    uint8_t ***VMM_input_array = generate_input_array(scal, 112);
+    uint8_t ***result_list = generate_result_array(scal, 112);
+    uint8_t ***image_input = alloc_3darray(1, 30, 30);
+    for (int i = 0; i < 30; i++)
+        for (int j = 0; j < 30; j++)
+            image_input[0][i][j] = myimagearray[0][i][j];
 
+    /*image making values*/
+    printf("inputs_mapping!!!!\n");
+    inputs_mapping(cnn->C1, image_input, VMM_input_array, &VMM_turns, scal, 1);
+    free_3darray(image_input, 1, 30);
+
+    printf("@@@@finish mapping\n");
+    for (uint8_t i = 0; i < scal; i++)
+    /*foor loop by 4 here*/
+    {
+        reset_VMM(); // reset to clean VMM, so only non-zero weights are needed
         printf("writing weights!\n");
-        FeedVMM_weights(weight_array);
+        FeedVMM_weights(weight_array, i);
         printf("\n");
-        /*image making values*/
-        printf("inputs_mapping!!!!\n");
-        inputs_mapping(cnn->C1, image_input, VMM_input_array, &VMM_turns, scal, 1);
-        free_3darray(image_input, 1, 30);
-
-        printf("@@@@finish mapping\n");
-        for (uint8_t i = 0; i < scal; i++)
-        /*foor loop by 4 here*/
+        for (int page_image = 0; page_image < VMM_turns; page_image++)
         {
-            for (int page_image = 0; page_image < VMM_turns; page_image++)
-            {
-                FeedVMM_image(VMM_input_array, page_image, i);
-    // printf("reading\n");
-    #ifdef ACORE
-                VMMMACoperation(result_list, page_image, i); // feedVMM and write VMMmac should be looped by scal right?
-    #else
-                vmm->MACoperation(cnn->C1, VMM_input_array, result_list, weight_array, page_image, i);
-    #endif
-            }
+// printf("reading\n");
+#ifdef ACORE
+            FeedVMM_image(VMM_input_array, page_image, i);
+            VMMMACoperation(result_list, page_image, i); // feedVMM and write VMMmac should be looped by scal right?
+#else
+            vmm->MACoperation(cnn->C1, VMM_input_array, result_list, weight_array, page_image, i);
+#endif
+        }
+        printf("\n");
+    }
+    printf("@@@@@@@@@@@@@Convimage: %d\n", VMM_turns);
+
+    Conv_image(cnn->C1, cnn->S2, result_list, VMM_turns, weights_number, scal, 1);
+    free_3darray(VMM_input_array, scal, VMM_turns);
+    free_3darray(result_list, scal, VMM_turns);
+    free_3darray(weight_array, scal, IMCcol);
+
+    printf("save image!!\n");
+    _CnnFF(cnn->C1, cnn->S2);
+    // for (int ch_i = 0; ch_i < 4; ch_i++)
+    // {
+    //     for (int i = 0; i < 28; i++)
+    //     {
+    //         for (int h = 0; h < 28; h++)
+    //         {
+    //             // #ifndef ACORE
+    //             // float number = bin_float_for_activation(cnn->C1->v[ch_i][i][h]);
+    //             // printf("%.3f ", number);
+    //             // #else
+    //             uint8_t number = cnn->C1->v[ch_i][i][h];
+    //             printf("%d ", number);
+    //             // #endif
+    //         }
+    //         printf("\n");
+    //     }
+    //     printf("\n");
+    // }
+
+#ifndef ACORE
+
+    for (int ch_i = 0; ch_i < 4; ch_i++)
+    {
+        for (int i = 0; i < 14; i++)
+        {
+            for (int h = 0; h < 14; h++)
+                printf("%d ", *(cnn->S2->y[ch_i][i][h]));
             printf("\n");
         }
-        printf("@@@@@@@@@@@@@Convimage: %d\n", VMM_turns);
+        printf("\n");
+    }
+#else
 
-        Conv_image(cnn->C1, cnn->S2, result_list, VMM_turns, weights_number, scal, 1);
-        free_3darray(VMM_input_array, scal, VMM_turns);
-        free_3darray(result_list, scal, VMM_turns);
-        free_3darray(weight_array, scal, IMCcol);
+    for (int ch_i = 0; ch_i < 4; ch_i++)
+    {
+        save_image(14, cnn->S2->y[ch_i]);
+        printf("\n");
+        printf("\n");
+    }
 
-        printf("save image!!\n");
-        _CnnFF(cnn->C1, cnn->S2);
-        for (int ch_i = 0; ch_i < 4; ch_i++)
-        {
-            for (int i = 0; i < 28; i++)
-            {
-                for (int h = 0; h < 28; h++)
-                {
-                    // #ifndef ACORE
-                    // float number = bin_float_for_activation(cnn->C1->v[ch_i][i][h]);
-                    // printf("%.3f ", number);
-                    // #else
-                    uint8_t number = cnn->C1->v[ch_i][i][h];
-                    printf("%d ", number);
-                    // #endif
-                }
-                printf("\n");
-            }
-            printf("\n");
-        }
-
-        #ifndef ACORE
-
-        for (int ch_i = 0; ch_i < 4; ch_i++)
-        {
-            for (int i = 0; i < 14; i++)
-            {
-                for (int h = 0; h < 14; h++)
-                    printf("%d ", *(cnn->S2->y[ch_i][i][h]));
-                printf("\n");
-            }
-            printf("\n");
-        }
-        #else
-
-        for (int ch_i = 0; ch_i < 4; ch_i++)
-        {
-            save_image(14, cnn->S2->y[ch_i]);
-            printf("\n");
-            printf("\n");
-        }
-
-        #endif
+#endif
 
     /*2nd convolution*/
     /*set up VMM*/
@@ -291,10 +283,10 @@ void main()
         for (int j = 0; j < 14; j++)
             for (int h = 0; h < 14; h++)
                 outputS2_list[i][j][h] = *(cnn->S2->y[i][j][h]);
-                // outputS2_list[i][j][h] = S2_output[i][j][h];
+    // outputS2_list[i][j][h] = S2_output[i][j][h];
 
-    // freeConvLayer(cnn->C1); // after image generation
-    // freePoolLayer(cnn->S2); // after image generation
+    freeConvLayer(cnn->C1); // after image generation
+    freePoolLayer(cnn->S2); // after image generation
 
     MatSize input_2nd_size;
     input_2nd_size.columns = (input_size.columns - map_size + 1) / 2;
@@ -307,15 +299,16 @@ void main()
     uint8_t ***VMM_input_array2 = generate_input_array(scal, 36);
     printf("input_2nd_size.columns: %d\n", input_2nd_size.columns);
     printf("input_2nd_size.rows: %d\n", input_2nd_size.rows);
-    printf("writing weights!\n");
-    FeedVMM_weights(weight_array2);
-    printf("\n");
     printf("inputs_mapping!!!!\n");
     inputs_mapping(cnn->C3, outputS2_list, VMM_input_array2,
                    &VMM_turns, scal, 2);
     printf("@@@@finish mapping\n");
     for (uint8_t i = 0; i < scal; i++)
     {
+        reset_VMM(); // reset VMM to clean VMM, so only need to write non-zero weights
+        printf("writing weights!\n");
+        printf("\n");
+        FeedVMM_weights(weight_array2, i);
         for (int page_image = 0; page_image < VMM_turns; page_image++)
         {
             FeedVMM_image(VMM_input_array2, page_image, i);
@@ -335,7 +328,15 @@ void main()
         for (int i = 0; i < 12; i++)
         {
             for (int h = 0; h < 12; h++)
+            {
                 printf("%d ", cnn->C3->v[ch_i][i][h]);
+
+                // float answer = (cnn->C3->v[ch_i][i][h] / 4) * 0.25 - 3.9375 - 3.9375/2;
+                // if (answer > -3)
+                    // printf("%.2f ", answer);
+                // else
+                    // printf("%d ", 0);
+            }
             printf("\n");
         }
         printf("\n");

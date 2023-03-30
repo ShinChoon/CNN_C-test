@@ -16,13 +16,19 @@ def float_bin(number, places=2):
     """
     if np.isnan(number):
         number = 0
-    # define max and min range
-    if number > (2**2-1)/2**2:
-        number = (2**2-1)/2**2
-    if number < -1 * (2**2-1)/2**2:
-        number = -1 * (2**2-1)/2**2
-    source = float("{:.5f}".format(number))
-    result = float_to_int8(source, places=places)
+    # # define max and min range
+    # if number > (2**2-1)/2**2:
+    #     number = (2**2-1)/2**2
+    # if number < -1 * (2**2-1)/2**2:
+    #     number = -1 * (2**2-1)/2**2
+    # source = float("{:.5f}".format(number))
+    # result = float_to_int8(source, places=places)
+    if number > (2**6-1)/2**6:
+        number = (2**6-1)/2**6
+    if number < -1 * (2**6-1)/2**6:
+        number = -1 * (2**6-1)/2**6
+    resolution = 2**(-6)  # corresponding to python
+    result = (int)(number/resolution)
     return result
 
 
@@ -37,23 +43,23 @@ def float_to_int8(number, places=2):
 def convert_float_int8(number, isweights):
     answer_in = 0
     if isweights:
-        if number > (2**(8-2+2)-1)/2**6 :
-                number = (2**(8-2+2)-1)/2**6
-        if number < -1 * (2**(8-2+2)-1)/2**6:
-                number = -1 * (2**(8-2+2)-1)/2**6
+        if number > (2**(8-2)-1)/2**6 :
+                number = (2**(8-2)-1)/2**6
+        if number < -1 * (2**(8-2)-1)/2**6:
+                number = -1 * (2**(8-2)-1)/2**6
 
-        resolution = 2**(-8+2+2)#sign bits by 2 + value range by 4 
+        resolution = 2**(-8+2)#sign bits by 2 + value range by 4 
         answer_in = abs((int)(number/resolution))
         if(number > 0):
             answer_in = answer_in + 64
         if(number < 0):
             answer_in = answer_in + 128
     else:
-        if number > (2**8-1)/2**8:
-            number = (2**8-1)/2**8
-        if number < -1 * (2**8-1)/2**8:
-            number = -1 * (2**8-1)/2**8
-        resolution = 2**(-8)  # corresponding to python
+        if number > (2**6-1)/2**6:
+            number = (2**6-1)/2**6
+        if number < -1 * (2**6-1)/2**6:
+            number = -1 * (2**6-1)/2**6
+        resolution = 2**(-6)  # corresponding to python
         answer_in = abs((int)(number/resolution))
     return answer_in
 
@@ -237,13 +243,8 @@ for i in range(109, 111):
     bb = remove_enpty_space(bb)
 
     bias_2.append(bb)
-for i in bias_2[1]:
-    bias_2[0].append(i)
-bias_map_2 = bias_2
 
-bias_map_2 = np.reshape(bias_map_2[0], (8))
-bias_map_2 = converstring_int_list(bias_map_2)
-# print("bias_map_2: ", np.shape(bias_map_2))
+bias_map_2 = converstring_int_list(bias_2[0])
 
 # prolog
 print('const int8_t bias_2[8] = {')

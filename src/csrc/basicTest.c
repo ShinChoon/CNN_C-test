@@ -388,7 +388,7 @@ void inputs_mapping(CovLayer *cc, uint8_t ***images, uint8_t ***maplist, int *VM
                         for (int ch = 0; ch < cc->input_channels / scaling; ch++)
                         {
                             VMM_input[count_x] = images[ch + scaling * scal][r][c]; // go through the image by channles and scaling
-                            printf("%d,%d  ", r, c);
+                            // printf("%d,%d  ", r, c);
                             // printf("->%d  ", VMM_input[count_x]);
                             count_x++; // increment index in one column (36)
                         }
@@ -800,7 +800,7 @@ void Conv_image(CovLayer *conv_layer, PoolingLayer *pool_layer, uint8_t ***input
     }
     else
     {
-        zero_limit = 32;
+        zero_limit = 34;
         for (int i = 0; i < VMM_turns; i++)
         {
             for (int h = 0; h < IMCcol; h++)

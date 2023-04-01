@@ -116,14 +116,14 @@ def bin_float_for_activation(number):
 #     for number in line:
 #         number = convert_float_int8(number, False)
 #         # fnumber = bin_float_for_activation(number)
-#         print('%d, ' % number)
+#         print('%s, ' % number)
 #     print('}, ')
 
 # # epilog
 # print('}};')
 
 rainfall = pd.read_csv('output/param_decoded.csv', sep=',', header=None)
-sized_data = rainfall[0:111]
+sized_data = rainfall
 
 smessage = sized_data.values
 
@@ -140,6 +140,16 @@ weights_map_2 = []
 
 bias_2 = []
 bias_map_2 = []
+
+w_fc1_group = []
+weights_fc1 = []
+bias_fc_1 = []
+
+w_fc2_group = []
+weights_fc2 = []
+bias_fc_2 = []
+
+
 
 counter = 0
 
@@ -174,8 +184,8 @@ for map in weights_map_1:
     for line in map:
         print('{')
         for number in line:
-            number = convert_float_int8(number, True)
-            print('%d, ' % number)
+            # number = convert_float_int8(number, True)
+            print('%s, ' % number)
         print('}, ')
 
     print('},')
@@ -197,8 +207,8 @@ print('const int8_t bias_1[4] = {')
 
 # data
 for ele in bias_1:
-    ele = float_bin(ele)
-    print('%d, ' % ele)
+    # ele = float_bin(ele)
+    print('%s, ' % ele)
 # epilog
 print('};')
 
@@ -212,7 +222,7 @@ for i in range(13, 109):
     weights_2.append(ww)
 
 weights_map_2 =  np.reshape(weights_2,(8,4,3,3))
-weights_map_2 = converstring_int_list(weights_map_2)
+# weights_map_2 = converstring_int_list(weights_map_2)
 # print("weights_map_2: ", np.shape(weights_map_2))
 
 # prolog
@@ -226,8 +236,8 @@ for out_ch in weights_map_2:
         for line in in_ch:
             print('{')
             for number in line:
-                number = convert_float_int8(number, True)
-                print('%d, ' % number)
+                # number = convert_float_int8(number, True)
+                print('%s, ' % number)
             print('}, ')
         print('}, ')
     print('},')
@@ -241,18 +251,107 @@ for i in range(109, 111):
     bb = remove_enpty_space(b)
     bb = bb[0].split(' ')
     bb = remove_enpty_space(bb)
+    for ele in bb:
+        bias_2.append(ele)
 
-    bias_2.append(bb)
-
-bias_map_2 = converstring_int_list(bias_2[0])
+bias_map_2 = converstring_int_list(bias_2)
 
 # prolog
 print('const int8_t bias_2[8] = {')
 
 # data
 for ele in bias_map_2:
-    ele = float_bin(ele)
-    print('%d, ' % ele)
+    # ele = float_bin(ele)
+    print('%s, ' % ele)
 # epilog
 print('};')
+
+for index in range(288):
+    weights_fc1 = []
+    for i in range(111+index*5, 116+index*5):
+        w = smessage[i][0].split(']')
+        w = w[0].split('[')
+        ww = remove_enpty_space(w)
+        ww = ww[0].split(' ')
+        ww = remove_enpty_space(ww)
+        for ele in ww:
+            weights_fc1.append(ele)
+
+
+    w_fc1_group.append(weights_fc1)
+
+# data
+print('const uint8_t weights_map_3[288][32] = {')
+for out_ch in w_fc1_group:
+    print('{')
+    for number in out_ch:
+        # number = convert_float_int8(number, True)
+        print('%s, ' % number)
+    print('}, ')
+# epilog
+print('};')
+
+for i in range(1551, 1556):
+    b = smessage[i][0].split(']')
+    b = b[0].split('[')
+    bb = remove_enpty_space(b)
+    bb = bb[0].split(' ')
+    bb = remove_enpty_space(bb)
+    for ele in bb:
+        bias_fc_1.append(ele)
+
+# prolog
+print('const int8_t bias_3[32] = {')
+
+# data
+for ele in bias_fc_1:
+    # ele = float_bin(ele)
+    print('%s, ' % ele)
+# epilog
+print('};')
+
+
+for index in range(32):
+    weights_fc2 = []
+    for i in range(1556+index*2, 1558+index*2):
+        w = smessage[i][0].split(']')
+        w = w[0].split('[')
+        ww = remove_enpty_space(w)
+        ww = ww[0].split(' ')
+        ww = remove_enpty_space(ww)
+        for ele in ww:
+            weights_fc2.append(ele)
+
+    w_fc2_group.append(weights_fc2)
+
+# data
+print('const uint8_t weights_map_4[32][10] = {')
+for out_ch in w_fc2_group:
+    print('{')
+    for number in out_ch:
+        # number = convert_float_int8(number, True)
+        print('%s, ' % number)
+    print('}, ')
+# epilog
+print('};')
+
 print("#endif")
+
+for i in range(1620, 1622):
+    b = smessage[i][0].split(']')
+    b = b[0].split('[')
+    bb = remove_enpty_space(b)
+    bb = bb[0].split(' ')
+    bb = remove_enpty_space(bb)
+    for ele in bb:
+        bias_fc_2.append(ele)
+
+# prolog
+print('const int8_t bias_4[10] = {')
+
+# data
+for ele in bias_fc_2:
+    # ele = float_bin(ele)
+    print('%s, ' % ele)
+# epilog
+print('};')

@@ -28,7 +28,7 @@ def float_bin(number, places=2):
     if number < -1 * (2**6-1)/2**6:
         number = -1 * (2**6-1)/2**6
     resolution = 2**(-6)  # corresponding to python
-    result = (int)(number/resolution)
+    result = round(number/resolution)
     return result
 
 
@@ -36,7 +36,7 @@ def float_to_int8(number, places=2):
     answer_in = 0
     # corresponding to python but leave space for 2 sign bits
     resolution = 2**(-1*places)
-    answer_in = (int)(number/resolution)
+    answer_in = round(number/resolution)
     return answer_in
 
 
@@ -49,7 +49,7 @@ def convert_float_int8(number, isweights):
                 number = -1 * (2**(8-2)-1)/2**6
 
         resolution = 2**(-8+2)#sign bits by 2 + value range by 4 
-        answer_in = abs((int)(number/resolution))
+        answer_in = abs(round(number/resolution))
         if(number > 0):
             answer_in = answer_in + 64
         if(number < 0):
@@ -60,7 +60,7 @@ def convert_float_int8(number, isweights):
         if number < -1 * (2**6-1)/2**6:
             number = -1 * (2**6-1)/2**6
         resolution = 2**(-6)  # corresponding to python
-        answer_in = abs((int)(number/resolution))
+        answer_in = abs(round(number/resolution))
     return answer_in
 
 def resize_images(data):
@@ -184,7 +184,7 @@ for map in weights_map_1:
     for line in map:
         print('{')
         for number in line:
-            # number = convert_float_int8(number, True)
+            number = convert_float_int8(number, True)
             print('%s, ' % number)
         print('}, ')
 
@@ -207,7 +207,7 @@ print('const int8_t bias_1[4] = {')
 
 # data
 for ele in bias_1:
-    # ele = float_bin(ele)
+    ele = float_bin(ele)
     print('%s, ' % ele)
 # epilog
 print('};')
@@ -222,7 +222,7 @@ for i in range(13, 109):
     weights_2.append(ww)
 
 weights_map_2 =  np.reshape(weights_2,(8,4,3,3))
-# weights_map_2 = converstring_int_list(weights_map_2)
+weights_map_2 = converstring_int_list(weights_map_2)
 # print("weights_map_2: ", np.shape(weights_map_2))
 
 # prolog
@@ -236,7 +236,7 @@ for out_ch in weights_map_2:
         for line in in_ch:
             print('{')
             for number in line:
-                # number = convert_float_int8(number, True)
+                number = convert_float_int8(number, True)
                 print('%s, ' % number)
             print('}, ')
         print('}, ')
@@ -256,12 +256,13 @@ for i in range(109, 111):
 
 bias_map_2 = converstring_int_list(bias_2)
 
+
 # prolog
 print('const int8_t bias_2[8] = {')
 
 # data
 for ele in bias_map_2:
-    # ele = float_bin(ele)
+    ele = float_bin(ele)
     print('%s, ' % ele)
 # epilog
 print('};')
@@ -280,12 +281,14 @@ for index in range(288):
 
     w_fc1_group.append(weights_fc1)
 
+w_fc1_group = converstring_int_list(w_fc1_group)
+
 # data
 print('const uint8_t weights_map_3[288][32] = {')
 for out_ch in w_fc1_group:
     print('{')
     for number in out_ch:
-        # number = convert_float_int8(number, True)
+        number = convert_float_int8(number, True)
         print('%s, ' % number)
     print('}, ')
 # epilog
@@ -300,12 +303,14 @@ for i in range(1551, 1556):
     for ele in bb:
         bias_fc_1.append(ele)
 
+bias_fc_1 = converstring_int_list(bias_fc_1)
+
 # prolog
 print('const int8_t bias_3[32] = {')
 
 # data
 for ele in bias_fc_1:
-    # ele = float_bin(ele)
+    ele = float_bin(ele)
     print('%s, ' % ele)
 # epilog
 print('};')
@@ -324,18 +329,19 @@ for index in range(32):
 
     w_fc2_group.append(weights_fc2)
 
+w_fc2_group = converstring_int_list(w_fc2_group)
+
 # data
 print('const uint8_t weights_map_4[32][10] = {')
 for out_ch in w_fc2_group:
     print('{')
     for number in out_ch:
-        # number = convert_float_int8(number, True)
+        number = convert_float_int8(number, True)
         print('%s, ' % number)
     print('}, ')
 # epilog
 print('};')
 
-print("#endif")
 
 for i in range(1620, 1622):
     b = smessage[i][0].split(']')
@@ -346,12 +352,15 @@ for i in range(1620, 1622):
     for ele in bb:
         bias_fc_2.append(ele)
 
+bias_fc_2 = converstring_int_list(bias_fc_2)
+
 # prolog
 print('const int8_t bias_4[10] = {')
 
 # data
 for ele in bias_fc_2:
-    # ele = float_bin(ele)
+    ele = float_bin(ele)
     print('%s, ' % ele)
 # epilog
 print('};')
+print("#endif")

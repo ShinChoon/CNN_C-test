@@ -12,7 +12,7 @@
 // #define MIN_POOLING 2 // Pooling with Minimum
 
 // float** weigths_mapping(Cnn *cnn);
-// float** inputs_mapping(float **inputdata);
+// float** inputs_mapping_Conv(float **inputdata);
 // void _CnnFF(Cnn *cnn, float **input_data);
 // void _CnnSetup(Cnn *cnn, MatSize input_size, int output_size);
 // ImageArray _ReadImages(const char *filename);
@@ -46,7 +46,7 @@
 //     float incorrect_ratio = 1.0;
 
 //     float **weigthts =  weigths_mapping(cnn);
-//     float **imagedata = inputs_mapping(test_images->image_point[0].image_data);
+//     float **imagedata = inputs_mapping_Conv(test_images->image_point[0].image_data);
 
 //     _CnnFF(cnn, test_images->image_point[0].image_data);
 
@@ -218,7 +218,7 @@
 //     return weights_map;
 // }
 
-// float **inputs_mapping(float **input_data)
+// float **inputs_mapping_Conv(float **input_data)
 // {
 //         printf("below is image map\n");
 

@@ -147,30 +147,25 @@ PoolingLayer *InitialPoolingLayer(int input_width, int input_height,
 
 OutputLayer *InitOutputLayer(int input_num, int output_num)
 {
-	OutputLayer *outL = (OutputLayer *)malloc(sizeof(*outL));
+	OutputLayer *outL = (OutputLayer *)calloc(1, sizeof(*outL));
 
 	outL->input_num = input_num;
 	outL->output_num = output_num;
 
-	outL->basic_data = (uint8_t *)calloc(output_num, sizeof(uint8_t));
+	// outL->basic_data = (uint8_t *)calloc(output_num, sizeof(uint8_t));
 
-	outL->d = malloc(output_num * sizeof(uint8_t));
-	outL->v = malloc(output_num * sizeof(uint8_t));
-	outL->y = malloc(output_num * sizeof(uint8_t));
+	// outL->d = malloc(output_num * sizeof(uint8_t));
+	outL->v = calloc(output_num, sizeof(*(outL->v)));
+	// outL->y = malloc(output_num * sizeof(uint8_t));
 
 	//
-	outL->wData = (uint8_t **)malloc(output_num * sizeof(uint8_t *)); //
+	// outL->wData = (uint8_t **)malloc(output_num * sizeof(uint8_t *)); //
 
-	srand((unsigned)time(NULL));
-	for (int i = 0; i < output_num; i++)
-	{
-		outL->wData[i] = (uint8_t *)malloc(input_num * sizeof(uint8_t));
-		// for (int j = 0; j < input_num; j++)
-		// {
-		// uint8_t randnum = (((uint8_t)rand() / (uint8_t)RAND_MAX) - 0.5) * 2; //
-		// outL->wData[i][j] = randnum * sqrt((uint8_t)6.0 / (uint8_t)(input_num + output_num));
-		// }
-	}
+	// srand((unsigned)time(NULL));
+	// for (int i = 0; i < output_num; i++)
+	// {
+	// 	outL->wData[i] = (uint8_t *)malloc(input_num * sizeof(uint8_t));
+	// }
 
 	outL->is_full_connect = true;
 

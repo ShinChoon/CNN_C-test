@@ -43,11 +43,11 @@ void _CnnSetup(Cnn *cnn, MatSize input_size, int output_size, int i)
 
         cnn->S2 = InitialPoolingLayer(temp_input_size.columns,
                                       temp_input_size.rows, pool_scale, 4, 4, MAX_POOLING);
-        // Layer3 Cov input size: {14,14}
-        temp_input_size.columns = temp_input_size.columns / 2;
-        temp_input_size.rows = temp_input_size.rows / 2;
-        printf("temp_input_size col: %d\n", temp_input_size.columns);
-        printf("temp_input_size rows: %d\n", temp_input_size.rows);
+        // // Layer3 Cov input size: {14,14}
+        // temp_input_size.columns = temp_input_size.columns / 2;
+        // temp_input_size.rows = temp_input_size.rows / 2;
+        // printf("temp_input_size col: %d\n", temp_input_size.columns);
+        // printf("temp_input_size rows: %d\n", temp_input_size.rows);
     }
 
     if (i == 2)
@@ -70,6 +70,15 @@ void _CnnSetup(Cnn *cnn, MatSize input_size, int output_size, int i)
 
         cnn->S4 = InitialPoolingLayer(temp_input_size.columns,
                                       temp_input_size.rows, pool_scale, 8, 8, MAX_POOLING);
+    }
+
+    if(i==3)
+    {
+        // Layer3 Cov input size: {14,14}
+        temp_input_size.columns = input_size.columns;
+        temp_input_size.rows = 1;
+        cnn->O5 = InitOutputLayer(temp_input_size.columns * temp_input_size.rows,
+                                  32);
     }
 }
 
@@ -147,14 +156,14 @@ void _CnnFF(CovLayer *conv_layer, PoolingLayer *pool_layer)
 //     return image_array;
 // }
 
-void weights_mapping(CovLayer *cc, uint8_t ***VMM_weights_map, int *weights_number,
+void weights_mapping_Conv(CovLayer *cc, uint8_t ***VMM_weights_map, int *weights_number,
                      int scaling, int layer_index)
 /*
     mapping weights into 32*36 matrix
     param cc: convLayer for current layer
     param weights_number: pointer to numer counting weights pattern duplication
     param scaling: scaling number for reduce the weights pattern size
-    return weights_mapping [scaling][IMCcol][IMCrow]
+    return weights_mapping_Conv [scaling][IMCcol][IMCrow]
 */
 {
     printf("below is weights map\n");
@@ -325,8 +334,26 @@ void weights_mapping(CovLayer *cc, uint8_t ***VMM_weights_map, int *weights_numb
     }
 }
 
-void inputs_mapping(CovLayer *cc, uint8_t ***images, uint8_t ***maplist, int *VMM_turns,
-                    int scaling, int layer_index)
+void weights_mapping_FC(OutputLayer *fc, uint8_t ***VMM_weights_map,
+                        int layer_index, int scaling)
+    /*update in each scaling time*/
+    /*output 32x36*/
+{
+
+    int input_channels = fc->input_num;
+    int output_channels = fc->output_num;
+
+    for(int i=0; i<IMCcol; i++)
+    {
+        for(int j=0; j<IMCrow; j++)
+        {
+            VMM_weights_map[0][i][j] = weights_map_3[j+scaling*IMCrow][i];
+        }
+    }
+}
+
+void inputs_mapping_Conv(CovLayer *cc, uint8_t ***images, uint8_t ***maplist, int *VMM_turns,
+                        int scaling, int layer_index)
 /*Create 9x1 lines of image data and concatenate lines into 2D array*/
 /*
     param images: image list
@@ -474,6 +501,21 @@ void inputs_mapping(CovLayer *cc, uint8_t ***images, uint8_t ***maplist, int *VM
     }
 
     *VMM_turns = count_y;
+}
+
+void inputs_mapping_FC(OutputLayer *fc, uint8_t ***images, uint8_t ***maplist, int *VMM_turns,
+                        int scaling, int layer_index)
+{
+    for(int i=0; i<8; i++)
+    {
+        for(int j=0; j<6; j++)
+        {
+            for(int z=0; z<6; z++)
+            {
+                maplist[0][i][z+6*j] = images[i][j][z];
+            }
+        }
+    }
 }
 
 const char *getfield(char *line, int num)
@@ -633,16 +675,18 @@ void MACoperation(CovLayer *conv_layer, uint8_t ***input_array, uint8_t ***outpu
         /*loop for 36 times in each row*/
         { // shape mismatch might be caused by precision issue
             fweight = bin_float_for_image_weights(weight_array[sc][h][d], 1);
+            // printf("fweight: %f  ", fweight);
             fimage = bin_float_for_image_weights(input_array[sc][page_image][d], 0);
-            // printf("%.2f ", fimage);
+            // printf("%f ", fweight); // for fully connected layer, here might be wrong
             dotproduct += fweight * fimage;
         }
         // printf("\n");
         // if (h % 4 == 0)
         // printf("%f ", dotproduct);
-        output_array[sc][page_image][h] = float_bin_for_bias_result(dotproduct);
+        output_array[sc][page_image][h] = float_bin_for_result(dotproduct);
         dotproduct = 0;
     }
+    // printf("\n");
 
     // for (int sc = 0; sc < scaling; sc++)
     // {
@@ -704,7 +748,7 @@ void Conv_image(CovLayer *conv_layer, PoolingLayer *pool_layer, uint8_t ***input
     int8_t mac_in_end = 0;
     int d = 0;
     int count = 0;
-    int zero_limit = 19;       // for ReLu to exclude all low values magic number
+    int zero_limit = 23;       // for ReLu to exclude all low values magic number
     int page_at_columnend = 4; // replace formular out_channel_number / scaling - (scaling - 1)
     if (layer_index == 2)
         page_at_columnend = 3;
@@ -800,7 +844,7 @@ void Conv_image(CovLayer *conv_layer, PoolingLayer *pool_layer, uint8_t ***input
     }
     else
     {
-        zero_limit = 34;
+        zero_limit = 41;
         for (int i = 0; i < VMM_turns; i++)
         {
             for (int h = 0; h < IMCcol; h++)
@@ -840,6 +884,30 @@ void Conv_image(CovLayer *conv_layer, PoolingLayer *pool_layer, uint8_t ***input
             }
         }
     }
+}
+
+void FC_image(OutputLayer *fc_layer,uint8_t ***input_array,
+                int scaling, int layer_index)
+{
+    for(int i=0; i<fc_layer->output_num; i++)
+    {
+        float mac_result = 0;
+        float bias_ = 0;
+        for(int j=0; j<8; j++)
+        {
+            mac_result += bin_float_for_result(input_array[0][j][i]);
+        }
+        // printf("\n");
+        bias_ = bin_float_for_bias(bias_3[i]);
+        fc_layer->v[i] = float_bin_for_result(mac_result + bias_);
+        // printf("%f ", mac_result + bias_);
+        if (fc_layer->v[i] <= 15)
+        {
+            fc_layer->v[i]=0;
+        }
+        // printf("v[i]: %d  ", fc_layer->v[i]);
+    }
+    // printf("\n");
 }
 
 void save_image(int scale, uint8_t ***image_data)
@@ -898,6 +966,16 @@ void freePoolLayer(PoolingLayer *pol)
     free(pol->y);
     // free(pol->basic_data);
     free(pol);
+}
+
+void freeFClayer(OutputLayer *FC)
+/*free space of Convolutional layer*/
+{
+    printf("freeConvLayer!\n");
+    int i, j, c, r;
+    int outH = FC->output_num;
+    free(FC->v);
+    free(FC);
 }
 
 uint8_t ***generate_input_array(int scal, int size)

@@ -352,16 +352,22 @@ void weights_mapping_FC(OutputLayer *fc, uint8_t ***VMM_weights_map,
         for(int j=0; j<IMCrow; j++)
         {
             if(layer_index==3)
+            {
                 VMM_weights_map[0][i][j] = weights_map_3[j+scaling*IMCrow][i];
+                // printf("%d ", VMM_weights_map[0][i][j]);
+            }
             else
             {
                 if(j<fc->input_num && i<fc->output_num)
                     VMM_weights_map[0][i][j] = weights_map_4[j+scaling * IMCrow][i];
                 else
                    VMM_weights_map[0][i][j]=0;
+                // printf("%d ", VMM_weights_map[0][i][j]);
             }
         }
+        // printf("\n");
     }
+    // printf("\n");
 }
 
 void inputs_mapping_Conv(CovLayer *cc, uint8_t ***images, uint8_t ***maplist, int *VMM_turns,
@@ -528,6 +534,7 @@ void inputs_mapping_FC(OutputLayer *fc, uint8_t ***images, uint8_t ***maplist, i
                 {
                     maplist[0][i][z+6*j] = images[i][j][z];
                 }
+
             }
         }
     }
@@ -699,7 +706,7 @@ void MACoperation(CovLayer *conv_layer, uint8_t ***input_array, uint8_t ***outpu
             fweight = bin_float_for_image_weights(weight_array[sc][h][d], 1);
             // printf("fweight: %f  ", fweight);
             fimage = bin_float_for_image_weights(input_array[sc][page_image][d], 0);
-            // printf("%f ", fweight); // for fully connected layer, here might be wrong
+            // printf("%d ", input_array[sc][page_image][d]); // for fully connected layer
             dotproduct += fweight * fimage;
             // printf("%f  ", fweight);
         }
@@ -866,7 +873,7 @@ void Conv_image(CovLayer *conv_layer, PoolingLayer *pool_layer, uint8_t ***input
     }
     else
     {
-        zero_limit = 32;
+        zero_limit = 41;
         for (int i = 0; i < VMM_turns; i++)
         {
             for (int h = 0; h < IMCcol; h++)
@@ -929,10 +936,10 @@ void FC_image(OutputLayer *fc_layer,uint8_t ***input_array,
             bias_ = bin_float_for_bias(bias_4[i]);
         }
         fc_layer->v[i] = float_bin_for_result(mac_result*0.5 + bias_);//0.5 is the propotion of output from python model
-        printf("activated result: %f   ", mac_result * 0.5 + bias_);
+        // printf("activated result: %f   ", mac_result * 0.5 + bias_);
         if (layer_index==3)
         {
-            int zero_limit = 14;
+            int zero_limit = 0;
             if (fc_layer->v[i] <= zero_limit + bias_3[i])
             {
                 fc_layer->v[i] = 0;
@@ -948,7 +955,7 @@ void FC_image(OutputLayer *fc_layer,uint8_t ***input_array,
         }
         // printf("v[i]: %d  ", fc_layer->v[i]);
     }
-    printf("\n");
+    // printf("\n");
 }
 
 void save_image(int scale, uint8_t ***image_data)

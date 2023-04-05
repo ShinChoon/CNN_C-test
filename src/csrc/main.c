@@ -361,7 +361,7 @@ void main()
     vmm = initializeVMM(cnn);
 #endif
     map_size = 3;
-    scal = 2;
+    scal = 8;
     column_dex = 0;
     VMM_turns = 0;
     weights_number = 0;
@@ -396,7 +396,7 @@ void main()
 
     printf("@@@@finish mapping\n");
 
-    for (uint8_t i = 0; i < 8; i++)
+    for (uint8_t i = 0; i < scal; i++)
     {
         weights_mapping_FC(cnn->O5, weight_array3, 3, i);
         reset_VMM(); // reset VMM to clean VMM, so only need to write non-zero weights
@@ -422,9 +422,66 @@ void main()
     printf("\n");
 
     free_3darray(weight_array3, 1, IMCcol);
-    free_3darray(VMM_input_array3, 1, 8);
-    free_3darray(result_list3, 1, 8);
+    free_3darray(VMM_input_array3, 1, scal);
+    free_3darray(result_list3, 1, scal);
+
+
+
+
+    uint8_t ***outputO5_list = alloc_3darray(1,
+                                             1,
+                                             32);
+
+    printf("outputS2_list generated!!");
+
+    for (int i = 0; i < 1; i++)
+        for (int j = 0; j < 1; j++)
+            for (int h = 0; h < 32; h++)
+                outputO5_list[i][j][h] = cnn->O5->v[h];
+
     freeFClayer(cnn->O5);
+    scal = 1;
+    printf("[+] CNN setup finished!\n");
+
+    uint8_t ***weight_array4 = alloc_3darray(1, IMCcol, IMCrow);
+    uint8_t ***result_list4 = generate_result_array(1, 1);
+    uint8_t ***VMM_input_array4 = generate_input_array(1, 1);
+
+    inputs_mapping_FC(cnn->O6, outputO5_list, VMM_input_array4,
+                      &VMM_turns, scal, 4);
+
+    free_3darray(outputO5_list, 1, 1);
+
+    printf("@@@@finish mapping\n");
+
+    for (uint8_t i = 0; i < scal; i++)
+    {
+        weights_mapping_FC(cnn->O6, weight_array4, 4, i);
+        reset_VMM(); // reset VMM to clean VMM, so only need to write non-zero weights
+        printf("writing weights!\n");
+        printf("\n");
+        FeedVMM_weights(weight_array4, 0); // updated in the wights mapping
+        FeedVMM_image(VMM_input_array4, i, 0);
+#ifdef ACORE
+        VMMMACoperation(result_list4, i, 0); // feedVMM and write VMMmac should be looped by scal right?
+#else
+        vmm->MACoperation(cnn->O6, VMM_input_array4, result_list4,
+                          weight_array4, i, 0);
+#endif
+    }
+    FC_image(cnn->O6, result_list4, scal, 4);
+    printf("save image!!\n");
+    for (int i = 0; i < cnn->O6->output_num; i++)
+    {
+        printf("%d   ", cnn->O6->v[i]);
+    }
+    printf("\n");
+
+    free_3darray(weight_array4, 1, IMCcol);
+
+    free_3darray(VMM_input_array4, 1, scal);
+    free_3darray(result_list4, 1, scal);
+    freeFClayer(cnn->O6);
 
 #ifndef ACORE
     free(vmm);

@@ -1,4 +1,5 @@
 #include "vmm.h"
+#include <math.h>
 
 uint8_t float_int8(float source)
 {
@@ -7,7 +8,6 @@ uint8_t float_int8(float source)
     float resolution = 0.25;
     float sum = source + base;
     answer = (uint8_t)round((sum) / resolution);
-    
     return answer;
 }
 
@@ -33,7 +33,7 @@ float bin_float_for_result(uint8_t _number)
     else if (number <= 0)
         number = 0;
 
-    float result = number*0.25-3.9375;
+    float result = number * 0.25 - 3.9375;
     return result;
 }
 
@@ -61,14 +61,15 @@ float bin_float_for_image_weights(uint8_t number, int isweight)
     }
     else
     {
-        base = 0.015625; // 2**(-8)
-        answer_in = (float)(_number) * base * sign;
+        base = 0.015625; // 2**(-6)
+        answer_in = (float)(_number)*base * sign;
     }
 
     return answer_in;
 }
 
-float bin_float_for_bias(int8_t number){
+float bin_float_for_bias(int8_t number)
+{
     int sign = 1;
     float base = 0.015625; // 2**(-6)) default for weights, because its absolute value range is (0,1)
     float answer_in = 0;

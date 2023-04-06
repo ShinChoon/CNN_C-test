@@ -72,7 +72,7 @@ void _CnnSetup(Cnn *cnn, MatSize input_size, int output_size, int i)
                                       temp_input_size.rows, pool_scale, 8, 8, MAX_POOLING);
     }
 
-    if(i==3)
+    if (i == 3)
     {
         temp_input_size.columns = input_size.columns;
         temp_input_size.rows = 1;
@@ -161,7 +161,7 @@ void _CnnFF(CovLayer *conv_layer, PoolingLayer *pool_layer)
 // }
 
 void weights_mapping_Conv(CovLayer *cc, uint8_t ***VMM_weights_map, int *weights_number,
-                     int scaling, int layer_index)
+                          int scaling, int layer_index)
 /*
     mapping weights into 32*36 matrix
     param cc: convLayer for current layer
@@ -340,38 +340,48 @@ void weights_mapping_Conv(CovLayer *cc, uint8_t ***VMM_weights_map, int *weights
 
 void weights_mapping_FC(OutputLayer *fc, uint8_t ***VMM_weights_map,
                         int layer_index, int scaling)
-    /*update in each scaling time*/
-    /*output 32x36*/
+/*update in each scaling time*/
+/*output 32x36*/
 {
 
     int input_channels = fc->input_num;
     int output_channels = fc->output_num;
 
-    for(int i=0; i<IMCcol; i++)
+    for (int i = 0; i < IMCcol; i++)
     {
-        for(int j=0; j<IMCrow; j++)
+        for (int j = 0; j < IMCrow; j++)
         {
-            if(layer_index==3)
+            if (layer_index == 3)
             {
-                VMM_weights_map[0][i][j] = weights_map_3[j+scaling*IMCrow][i];
-                // printf("%d ", VMM_weights_map[0][i][j]);
+                VMM_weights_map[0][i][j] = weights_map_3[j + scaling * IMCrow][i];
             }
             else
             {
-                if(j<fc->input_num && i<fc->output_num)
-                    VMM_weights_map[0][i][j] = weights_map_4[j+scaling * IMCrow][i];
+                if (j < fc->input_num && i < fc->output_num)
+                    VMM_weights_map[0][i][j] = weights_map_4[j + scaling * IMCrow][i];
                 else
-                   VMM_weights_map[0][i][j]=0;
-                // printf("%d ", VMM_weights_map[0][i][j]);
+                    VMM_weights_map[0][i][j] = 0;
             }
         }
-        // printf("\n");
     }
-    // printf("\n");
+
+    // if(layer_index==3)
+    // {
+    //     for(int i=0;i<IMCcol; i++)
+    //     {
+    //         for(int j=0; j<IMCrow; j++)
+    //         {
+    //             printf("%d ", VMM_weights_map[0][i][j]);
+    //         }
+    //         printf("\n");
+    //     }
+    //     printf("\n");
+    // }
+    
 }
 
 void inputs_mapping_Conv(CovLayer *cc, uint8_t ***images, uint8_t ***maplist, int *VMM_turns,
-                        int scaling, int layer_index)
+                         int scaling, int layer_index)
 /*Create 9x1 lines of image data and concatenate lines into 2D array*/
 /*
     param images: image list
@@ -522,25 +532,24 @@ void inputs_mapping_Conv(CovLayer *cc, uint8_t ***images, uint8_t ***maplist, in
 }
 
 void inputs_mapping_FC(OutputLayer *fc, uint8_t ***images, uint8_t ***maplist, int *VMM_turns,
-                        int scaling, int layer_index)
+                       int scaling, int layer_index)
 {
-    if(layer_index==3)
+    if (layer_index == 3)
     {
         for (int i = 0; i < scaling; i++)
         {
-            for(int j=0; j<6; j++)
+            for (int j = 0; j < 6; j++)
             {
-                for(int z=0; z<6; z++)
+                for (int z = 0; z < 6; z++)
                 {
-                    maplist[0][i][z+6*j] = images[i][j][z];
+                    maplist[0][i][z + 6 * j] = images[i][j][z];
                 }
-
             }
         }
     }
     else
     {
-        for(int i=0; i<fc->input_num; i++)
+        for (int i = 0; i < fc->input_num; i++)
         {
             maplist[0][0][i] = images[0][0][i];
         }
@@ -708,11 +717,11 @@ void MACoperation(CovLayer *conv_layer, uint8_t ***input_array, uint8_t ***outpu
             fimage = bin_float_for_image_weights(input_array[sc][page_image][d], 0);
             // printf("%d ", input_array[sc][page_image][d]); // for fully connected layer
             dotproduct += fweight * fimage;
-            // printf("%f  ", fweight);
         }
         // printf("\n");
         // if (h % 4 == 0)
         output_array[sc][page_image][h] = float_bin_for_result(dotproduct);
+        // printf("%d  ", output_array[sc][page_image][h]);
         dotproduct = 0;
     }
     // printf("\n");
@@ -777,7 +786,7 @@ void Conv_image(CovLayer *conv_layer, PoolingLayer *pool_layer, uint8_t ***input
     int8_t mac_in_end = 0;
     int d = 0;
     int count = 0;
-    int zero_limit = 23; // for ReLu to exclude all low values magic number
+    int zero_limit = 23;       // for ReLu to exclude all low values magic number
     int page_at_columnend = 4; // replace formular out_channel_number / scaling - (scaling - 1)
     if (layer_index == 2)
         page_at_columnend = 3;
@@ -915,10 +924,10 @@ void Conv_image(CovLayer *conv_layer, PoolingLayer *pool_layer, uint8_t ***input
     }
 }
 
-void FC_image(OutputLayer *fc_layer,uint8_t ***input_array,
-                int scaling, int layer_index)
+void FC_image(OutputLayer *fc_layer, uint8_t ***input_array,
+              int scaling, int layer_index)
 {
-    for(int i=0; i<fc_layer->output_num; i++)
+    for (int i = 0; i < fc_layer->output_num; i++)
     {
         float mac_result = 0;
         float bias_ = 0;
@@ -926,8 +935,7 @@ void FC_image(OutputLayer *fc_layer,uint8_t ***input_array,
         {
             mac_result += bin_float_for_result(input_array[0][j][i]);
         }
-        // printf("\n");
-        if(layer_index==3)
+        if (layer_index == 3)
         {
             bias_ = bin_float_for_bias(bias_3[i]);
         }
@@ -935,23 +943,26 @@ void FC_image(OutputLayer *fc_layer,uint8_t ***input_array,
         {
             bias_ = bin_float_for_bias(bias_4[i]);
         }
-        fc_layer->v[i] = float_bin_for_result(mac_result*0.5 + bias_);//0.5 is the propotion of output from python model
-        // printf("activated result: %f   ", mac_result * 0.5 + bias_);
-        if (layer_index==3)
+        float activated_result = mac_result * 0.5 + bias_;
+        // printf("activated_result: %d   ", (int)(activated_result * 100));
+        fc_layer->v[i] = float_bin_for_result(activated_result); // 0.5 is the propotion of output from python model
+        if (layer_index == 3)
         {
             int zero_limit = 0;
-            if (fc_layer->v[i] <= zero_limit + bias_3[i])
+            if (fc_layer->v[i] <= bias_3[i])
             {
                 fc_layer->v[i] = 0;
             }
+            fc_layer->v[i] *= 8;
         }
         else
         {
             int zero_limit = 0;
-            if (fc_layer->v[i] <= zero_limit + bias_4[i])
+            if (fc_layer->v[i] <= bias_4[i])
             {
                 fc_layer->v[i] = 0;
             }
+            fc_layer->v[i] *= 1;
         }
         // printf("v[i]: %d  ", fc_layer->v[i]);
     }

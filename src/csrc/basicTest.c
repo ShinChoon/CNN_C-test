@@ -860,7 +860,7 @@ void Conv_image(CovLayer *conv_layer, PoolingLayer *pool_layer, uint8_t ***input
                             mac_in_process += bias_1[d];
                             if (mac_in_process <= zero_limit + bias_1[d])
                                 mac_in_process = 0;
-                            conv_layer->v[d][row_index][column_index] = mac_in_process * 8;
+                            conv_layer->v[d][row_index][column_index] = mac_in_process *8;
 
                             // convolution might have some issues here
                             // printf("row_:%d, column_:%d  ", row_index, column_index);
@@ -948,8 +948,7 @@ void FC_image(OutputLayer *fc_layer, uint8_t ***input_array,
         fc_layer->v[i] = float_bin_for_result(activated_result); // 0.5 is the propotion of output from python model
         if (layer_index == 3)
         {
-            int zero_limit = 0;
-            if (fc_layer->v[i] <= bias_3[i])
+            if (fc_layer->v[i] <= 16)
             {
                 fc_layer->v[i] = 0;
             }
@@ -957,8 +956,7 @@ void FC_image(OutputLayer *fc_layer, uint8_t ***input_array,
         }
         else
         {
-            int zero_limit = 0;
-            if (fc_layer->v[i] <= bias_4[i])
+            if (fc_layer->v[i] <= 16)
             {
                 fc_layer->v[i] = 0;
             }

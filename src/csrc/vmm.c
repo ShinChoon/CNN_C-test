@@ -28,8 +28,8 @@ float bin_float_for_result(uint8_t _number)
 /*take the functionality of quantization in RELU*/
 {
     uint8_t number = _number;
-    if (number >= 32) // 4-2**(-4)
-        number = 32;
+    if (number >= 64) // 4-2**(-4)
+        number = 64;
     else if (number <= 0)
         number = 0;
 

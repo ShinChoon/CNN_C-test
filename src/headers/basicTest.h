@@ -10,7 +10,7 @@ typedef struct VMMStructure
     int cols;
     int rows;
     Cnn *Cnn;
-    void (*MACoperation)(CovLayer *, uint8_t ***, uint8_t ***, uint8_t ***, int, int);
+    void (*MACoperation)(CovLayer *, uint8_t ***, uint8_t ***, uint8_t ***, int, int, int);
 } VMM;
 
 struct weight_map
@@ -55,7 +55,7 @@ void conv_onthe_end(CovLayer *conv_layer, int scaling, uint8_t ***input_array, i
                     int *row_index, int *column_index, int i, uint8_t leftover_number);
 
 void MACoperation(CovLayer *conv_layer, uint8_t ***input_array, uint8_t ***output_array, uint8_t ***weight_array,
-                  int VMM_turns, int scaling);
+                  int VMM_turns, int scaling, int layer_index);
 void save_image(int scale, uint8_t ***image_data);
 void read_data(char *address, char *data);
 void write_data(char *address, char *data);

@@ -338,7 +338,6 @@ void main()
             for (int h = 0; h < 12; h++)
             {
                 printf("%d ", cnn->C3->v[ch_i][i][h]);
-
                 // float answer = (cnn->C3->v[ch_i][i][h] / 4) * 0.25 - 3.9375 - 3.9375/2;
                 // if (answer > -3)
                 // printf("%.2f ", answer);

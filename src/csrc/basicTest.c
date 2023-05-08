@@ -15,7 +15,14 @@
 #define tx_status_adr 0x30001008
 #define address_bus 0x30001004
 #define info_bus 0x30001004
-
+/**
+*@brief This function sets up the CNN network by initializing its different layers based on the given input_size and output_size parameters.
+*
+*@param cnn pointer to the CNN structure
+*@param input_size size of the input matrix
+*@param output_size number of output classes(not used right now)
+*@param i index of the layer to be set up
+*/
 void _CnnSetup(Cnn *cnn, MatSize input_size, int output_size, int i)
 {
     int map_size = 3;
@@ -43,11 +50,6 @@ void _CnnSetup(Cnn *cnn, MatSize input_size, int output_size, int i)
 
         cnn->S2 = InitialPoolingLayer(temp_input_size.columns,
                                       temp_input_size.rows, pool_scale, 4, 4, MAX_POOLING);
-        // // Layer3 Cov input size: {14,14}
-        // temp_input_size.columns = temp_input_size.columns / 2;
-        // temp_input_size.rows = temp_input_size.rows / 2;
-        // printf("temp_input_size col: %d\n", temp_input_size.columns);
-        // printf("temp_input_size rows: %d\n", temp_input_size.rows);
     }
 
     if (i == 2)
@@ -86,6 +88,13 @@ void _CnnSetup(Cnn *cnn, MatSize input_size, int output_size, int i)
     }
 }
 
+/**
+*@brief Performs forward pass of a convolutional layer followed by a pooling layer
+*
+*@param conv_layer Pointer to a ConvLayer structure representing the convolutional layer
+*@param pool_layer Pointer to a PoolingLayer structure representing the pooling layer
+*/
+
 void _CnnFF(CovLayer *conv_layer, PoolingLayer *pool_layer)
 /*
     1st Activation + Pooling
@@ -113,62 +122,19 @@ void _CnnFF(CovLayer *conv_layer, PoolingLayer *pool_layer)
     }
 }
 
-// // Read one image from data <filename>
-// ImageArray _ReadImages(const char *filename)
-// /*try to add padding from 28x28 to 30x30, only return 1*/
-// {
-//     // Read images from file with file_point
-//     int number_of_images = 0; // Images' number
-//     int n_rows = 0;           // number of rows of an image<image hight>
-//     int n_columns = 0;        // number of cols of an image<image width>
-
-//     // uint8_t zero_pixel = 0;
-//     uint8_t temp_pixel = 0;
-
-//     number_of_images = 1;
-
-//     n_rows = 30;
-//     n_columns = 30;
-
-//     ImageArray image_array = calloc(1, sizeof(*image_array));
-//     // define strutrue of image array
-//     image_array->number_of_images = number_of_images; // number of images
-//     // array of all images.
-//     image_array->image_point = calloc(number_of_images, sizeof(*(image_array->image_point)));
-
-//     int row, column;                           // Temp for row and column
-//     for (int i = 0; i < number_of_images; ++i) // Images from 0 -> number_of_images-1
-//     {
-//         image_array->image_point[i].number_of_rows = n_rows;
-//         image_array->image_point[i].number_of_columns = n_columns; // set
-//         image_array->image_point[i].image_data = calloc(n_rows, sizeof(*(image_array->image_point[i].image_data)));
-
-//         /*from 0 -> Nth rows*/
-//         for (row = 0; row < n_rows; ++row)
-//         {
-//             image_array->image_point[i].image_data[row] = calloc((n_columns), sizeof((image_array->image_point[i].image_data[row]))); // expanding to 30
-//             for (column = 0; column < n_columns; ++column)                                                                            // from 0 -> n_columns
-//             {
-//                 // read a pixel 0-255 with 8-bit
-//                 temp_pixel = (uint8_t)myimagearray[row][column];
-//                 // Change 8-bit pixel to uint8_t.
-//                 image_array->image_point[i].image_data[row][column] = (uint8_t)temp_pixel;
-//             }
-//         }
-//     }
-
-//     return image_array;
-// }
+/**
+ * @brief Maps the convolution layer weights into a 32*36 matrix
+ *
+ * @param cc: ConvLayer for the current layer
+ * @param VMM_weights_map: Pointer to the output 3D array [scaling][IMCcol][IMCrow]
+ * @param weights_number: Pointer to the number counting weights pattern duplication
+ * @param scaling: Scaling number for reducing the weights pattern size
+ * @param layer_index: Index of the layer
+ * @return weights_mapping_Conv [scaling][IMCcol][IMCrow]
+ */
 
 void weights_mapping_Conv(CovLayer *cc, uint8_t ***VMM_weights_map, int *weights_number,
                           int scaling, int layer_index)
-/*
-    mapping weights into 32*36 matrix
-    param cc: convLayer for current layer
-    param weights_number: pointer to numer counting weights pattern duplication
-    param scaling: scaling number for reduce the weights pattern size
-    return weights_mapping_Conv [scaling][IMCcol][IMCrow]
-*/
 {
     printf("below is weights map\n");
     // printf("inputchannel: %d\n", cc->input_channels);
@@ -194,6 +160,7 @@ void weights_mapping_Conv(CovLayer *cc, uint8_t ***VMM_weights_map, int *weights
     /*weights map for columns by output channels*/
     /*convert matrix from output*input*3*3 into output*input*9 */
     for (int j = 0; j < output_channels; j++)
+    {
         for (int i = 0; i < cc->input_channels; i++)
         {
             for (int x = 0; x < 3; x++)
@@ -209,18 +176,17 @@ void weights_mapping_Conv(CovLayer *cc, uint8_t ***VMM_weights_map, int *weights
                     k2++;
                 }
             }
-            // if (layer_index > 1)
+
+            for (int y = 0; y < 9/2; y++)
             {
-                for (int y = 0; y < 9/2; y++)
-                {
-                    int temp = map_array[j][i][y];
-                    map_array[j][i][y] = map_array[j][i][9-1-y];
-                    map_array[j][i][9-1-y] = temp;
-                }
+                int temp = map_array[j][i][y];
+                map_array[j][i][y] = map_array[j][i][9-1-y];
+                map_array[j][i][9-1-y] = temp;
             }
 
             k2 = 0;
         }
+    }
 
     /*convert map array shape: cascade element from each input channel, as shape from 4x9 to 1x36*/
     uint8_t mid_map_array[output_channels][input_channels * map_num];
@@ -351,10 +317,18 @@ void weights_mapping_Conv(CovLayer *cc, uint8_t ***VMM_weights_map, int *weights
     }
 }
 
+/**
+ * @brief Mapping weights into 32x36 matrix for fully connected layer.
+ * It updates in each scaling turn
+ *
+ * @param fc Pointer to the fully connected layer.
+ * @param VMM_weights_map Pointer to the 3D array that stores the weight map.
+ * @param layer_index The index of the layer.
+ * @param scaling The scaling factor.
+ */
 void weights_mapping_FC(OutputLayer *fc, uint8_t ***VMM_weights_map,
                         int layer_index, int scaling)
-/*update in each scaling time*/
-/*output 32x36*/
+
 {
 
     int input_channels = fc->input_num;
@@ -379,6 +353,7 @@ void weights_mapping_FC(OutputLayer *fc, uint8_t ***VMM_weights_map,
 
     }
 
+    /*debug printing*/
     // if(layer_index==3)
     // {
     //     for(int i=0;i<IMCcol; i++)
@@ -394,17 +369,20 @@ void weights_mapping_FC(OutputLayer *fc, uint8_t ***VMM_weights_map,
     
 }
 
+/**
+ *@brief Creates 9x1 lines of image data and concatenates lines into a 2D array.
+ *
+ *@param cc ConvLayer struct representing the convolutional layer.
+ *@param images List of input images.
+ *@param maplist List of mapped inputs, represented as a scal x VMM_turns array.
+ *@param VMM_turns Number of VMM pages.
+ *@param scaling Scaling factor for the input, dividing input mapping into "scaled" pieces
+ *@param layer_index Index of the layer, for changing the strategy of mapping
+ *@note For the Conv1 layer, the input mapping will have half space empty at each 4th ([3]) page.
+ */
 void inputs_mapping_Conv(CovLayer *cc, uint8_t ***images, uint8_t ***maplist, int *VMM_turns,
                          int scaling, int layer_index)
-/*Create 9x1 lines of image data and concatenate lines into 2D array*/
-/*
-    param images: image list
-    param maplist: map list, 1x28x36 list, output
-    param VMM_turns: number of VMM pages, output
-    param scaling: scaling number
-    param part_index: part_index of input mapping
-    **please notice that the inputs mapping will have half space empty at each 4th([3]) page
-*/
+
 {
     MatSize temp_input_size;
     temp_input_size.columns = cc->input_width;
@@ -457,7 +435,7 @@ void inputs_mapping_Conv(CovLayer *cc, uint8_t ***images, uint8_t ***maplist, in
                         for (int ch = 0; ch < cc->input_channels / scaling; ch++)
                         {
                             VMM_input[count_x] = images[ch + scaling * scal][r][c]; // go through the image by channles and scaling
-                            // printf("%d,%d  ", r, c);
+                            // printf("%d->%d,%d  ", count_x, r, c);
                             // printf("->%d  ", VMM_input[count_x]);
                             count_x++; // increment index in one column (36)
                         }
@@ -545,6 +523,17 @@ void inputs_mapping_Conv(CovLayer *cc, uint8_t ***images, uint8_t ***maplist, in
     *VMM_turns = count_y;
 }
 
+/**
+
+*@brief Map input images to input array for fully connected layer
+*
+*@param fc Pointer to the fully connected layer
+*@param images Input images to be mapped
+*@param maplist 1x1x(input_num) array that will store the input array for VMM
+*@param VMM_turns Number of VMM pages
+*@param scaling Scaling number
+*@param layer_index Index of the current layer
+*/
 void inputs_mapping_FC(OutputLayer *fc, uint8_t ***images, uint8_t ***maplist, int *VMM_turns,
                        int scaling, int layer_index)
 {
@@ -570,19 +559,12 @@ void inputs_mapping_FC(OutputLayer *fc, uint8_t ***images, uint8_t ***maplist, i
     }
 }
 
-const char *getfield(char *line, int num)
-{
-    const char *tok;
-    for (tok = strtok(line, " []\n\r");
-         tok && *tok;
-         tok = strtok(NULL, " []\n\r"))
-    {
-        if (!--num)
-            return tok;
-    }
-    return tok;
-}
-
+/**
+*@brief This function imports the Convolutional Neural Network (CNN) from the header file.
+*
+*@param cnn A pointer to the CNN object to be imported.
+*@param i The index of the layer.
+*/
 void _ImportCnn(Cnn *cnn, int i)
 // import cnn from header file
 {
@@ -626,77 +608,14 @@ void _ImportCnn(Cnn *cnn, int i)
     }
 }
 
-void assign_to_sub_array(uint8_t ***maplist, uint8_t *temp_input, int size_xx, int count_y, int scal)
-{
-    int sub_array_index = count_y / 28;
-    for (int h = 0; h < size_xx; h++)
-        maplist[scal][count_y - sub_array_index * 28][h] = temp_input[h];
-}
-
-void load_weights(CovLayer *cc, uint8_t ****weights)
-{
-    for (int i = 0; i < cc->output_channels; i++)
-        for (int j = 0; j < cc->input_channels; j++)
-        {
-            for (int r = 0; r < cc->map_size; r++)
-            {
-                for (int c = 0; c < cc->map_size; c++)
-                {
-                    cc->map_data[i][j][r][c] = weights[i][j][r][c];
-                }
-            }
-        }
-}
-
-void load_bias(CovLayer *cc, uint8_t *bias)
-{
-    for (int ch = 0; ch < cc->output_channels; ch++)
-    {
-        cc->basic_data[ch] = bias[ch];
-    }
-}
-
-ImageArray Output_image(int cols, int rows, uint8_t ***image_data, int number)
-/*convert output into MnistImage structure*/
-{
-    // Read images from file with file_point
-
-    int number_of_images = number; // Images' number
-    int n_rows = rows;             // number of rows of an image<image hight>
-    int n_columns = cols;          // number of cols of an image<image width>
-
-    // uint8_t zero_pixel = 0;
-    uint8_t temp_pixel = 0;
-    ImageArray image_array = calloc(1, sizeof(*image_array));
-
-    // define strutrue of image array
-    image_array->number_of_images = number_of_images; // number of images
-    // array of all images.
-    image_array->image_point = calloc(number_of_images, sizeof(*(image_array->image_point)));
-
-    for (int i = 0; i < number_of_images; ++i) // Images from 0 -> number_of_images-1
-    {
-        image_array->image_point[i].number_of_rows = n_rows;
-        image_array->image_point[i].number_of_columns = n_columns; // set
-        image_array->image_point[i].image_data = calloc((n_rows), sizeof(*(image_array->image_point[i].image_data)));
-
-        /*from 0 -> Nth rows*/
-        for (int row = 0; row < n_rows; ++row)
-        {
-            image_array->image_point[i].image_data[row] = calloc(n_columns, sizeof((image_array->image_point[i].image_data[row]))); // expanding to 30
-            for (int column = 0; column < n_columns; ++column)                                                                      // from 0 -> n_columns
-            {
-                // read a pixel 0-255 with 8-bit
-                /*if needed, replace image_data with debug image data*/
-                temp_pixel = (uint8_t)image_data[i][row][column];
-                // Change 8-bit pixel to uint8_t.
-                image_array->image_point[i].image_data[row][column] = (uint8_t)temp_pixel;
-            }
-        }
-    }
-
-    return image_array;
-}
+/**
+*@brief Initializes the Vector Mateix Multiplication (VMM) for the given CNN.
+*This function allocates memory for the VMM and sets its properties based on the input CNN. It also assigns the
+*MACoperation function pointer to the VMM's function pointer. This function returns the initialized VMM.
+*
+*@param cnn A pointer to the CNN for which the VMM is being initialized.
+*@return A pointer to the initialized VMM.
+*/
 
 VMM *initializeVMM(Cnn *cnn)
 /*initalize the VMM and return VMM*/
@@ -709,6 +628,16 @@ VMM *initializeVMM(Cnn *cnn)
     return vmm;
 }
 
+/**
+*@brief Performs the Multiply and Accumulate operation (MAC) for a convolutional layer.
+*@param conv_layer Pointer to the convolutional layer.
+*@param input_array Pointer to the input array.
+*@param output_array Pointer to the output array.
+*@param weight_array Pointer to the weight array.
+*@param page_image The index of the current page.
+*@param sc The current scaling factor.
+*@param layer_index The index of the current layer.
+*/
 void MACoperation(CovLayer *conv_layer, uint8_t ***input_array, uint8_t ***output_array, uint8_t ***weight_array,
                   int page_image, int sc, int layer_index)
 /*why the convolution layer output zero padding has only 4 rows???*/
@@ -727,7 +656,7 @@ void MACoperation(CovLayer *conv_layer, uint8_t ***input_array, uint8_t ***outpu
         /*loop for 36 times in each row*/
         { // shape mismatch might be caused by precision issue
             fweight = bin_float_for_image_weights(weight_array[sc][h][d], 1);
-            // printf("%d  ", weight_array[sc][h][d]);
+            // printf("%d->", weight_array[sc][h][d]);
             fimage = bin_float_for_image_weights(input_array[sc][page_image][d], 0);
             // printf("%d ", input_array[sc][page_image][d]); // for fully connected layer
             dotproduct += fweight * fimage;
@@ -787,6 +716,18 @@ void MACoperation(CovLayer *conv_layer, uint8_t ***input_array, uint8_t ***outpu
     // }
 }
 
+/**
+
+*@brief Performs occumulation operation on the results array and activate the result in the convolution layer.
+*
+*@param conv_layer Pointer to the convolution layer.
+*@param pool_layer Pointer to the pooling layer.
+*@param input_array Three dimensional array that contains the input data.
+*@param VMM_turns Number of times the VMM is applied on the input data.
+*@param weights_number Number of weights used in the convolution operation.
+*@param scaling Number of scaling factors used in the convolution operation.
+*@param layer_index Index of the current layer.
+*/
 void Conv_image(CovLayer *conv_layer, PoolingLayer *pool_layer, uint8_t ***input_array,
                 int VMM_turns, int weights_number, int scaling, int layer_index)
 {
@@ -814,12 +755,6 @@ void Conv_image(CovLayer *conv_layer, PoolingLayer *pool_layer, uint8_t ***input
 
     if (layer_index == 1)
     {
-        for (int i = 0; i < out_channel_number / 2; i++)
-        {
-            int temp = bias_1[i];
-            bias_1_layer[i] = bias_1[out_channel_number - 1 - i];
-            bias_1_layer[out_channel_number - 1 - i] = temp;
-        }
         for (int i = 0; i < VMM_turns; i++)
         {
             if (((i + 1) % page_at_columnend == 0) && (i > 1)) // I really don't know what the fuck it is
@@ -927,12 +862,6 @@ void Conv_image(CovLayer *conv_layer, PoolingLayer *pool_layer, uint8_t ***input
     }
     else
     {
-        for(int i=0; i< out_channel_number/2; i++)
-        {
-            int temp = bias_2[i];
-            bias_2_layer[i] = bias_2[out_channel_number-1-i];
-            bias_2_layer[out_channel_number - 1 - i] = temp;
-        }
         for (int i = 0; i < VMM_turns; i++)
         {
             for (int h = 0; h < IMCcol; h++)
@@ -949,7 +878,7 @@ void Conv_image(CovLayer *conv_layer, PoolingLayer *pool_layer, uint8_t ***input
                         }
                         // printf(" @@@row_: %d,column_: %d ", row_index ,column_index);
 
-                        mac_in_end += bin_float_for_bias(bias_2_layer[d]);
+                        mac_in_end += bin_float_for_bias(bias_2[d]);
                         if(mac_in_end < 0)
                             mac_in_end = 0;
                         conv_layer->v[d][row_index][column_index] = float_bin_for_result(mac_in_end);
@@ -984,7 +913,7 @@ void Conv_image(CovLayer *conv_layer, PoolingLayer *pool_layer, uint8_t ***input
         // printf("\n");
         }
 
-        MatSize ySize = {12, 12};
+        // MatSize ySize = {12, 12};
         // conv_layer->v[0]=  MatRotate180(conv_layer->v[0], ySize);
         // conv_layer->v[1] = MatRotate180(conv_layer->v[1], ySize);
 
@@ -1015,6 +944,14 @@ void Conv_image(CovLayer *conv_layer, PoolingLayer *pool_layer, uint8_t ***input
     }
 }
 
+/**
+ * @brief Accumulate the results lists for fully-connected layer and stores the result as the output 
+ * 
+ * @param fc_layer Pointer to the fc layer
+ * @param input_array Three-dimensional array holding the input data, 1x1x32 in O5, and 1X1X10 in O6
+ * @param scaling The scaling factor used for quantization
+ * @param layer_index Index of the layer
+ */
 void FC_image(OutputLayer *fc_layer, uint8_t ***input_array,
               int scaling, int layer_index)
 {
@@ -1054,6 +991,12 @@ void FC_image(OutputLayer *fc_layer, uint8_t ***input_array,
     // printf("\n");
 }
 
+/**
+*@brief print the 2D array of image data
+*
+*@param scale The scale of the image
+*@param image_data The 2D array of image data
+*/
 void save_image(int scale, uint8_t ***image_data)
 {
     uint8_t temp = 0;
@@ -1069,6 +1012,16 @@ void save_image(int scale, uint8_t ***image_data)
     }
 }
 
+/**
+*@brief Frees memory space of a Convolutional Layer
+*This function frees the memory space of a Convolutional Layer by freeing
+*the memory of each element of the 3D matrix v[j][r], and then freeing
+*the memory of the array of pointers v[j] pointing to the 2D matrices,
+*and finally freeing the memory of the array of pointers v pointing to the
+*array of pointers v[j].
+*
+*@param covL The Convolutional Layer to free its memory space
+*/
 void freeConvLayer(CovLayer *covL)
 /*free space of Convolutional layer*/
 {
@@ -1082,16 +1035,18 @@ void freeConvLayer(CovLayer *covL)
         for (r = 0; r < outH; r++)
         {
             free(covL->v[j][r]);
-            // free(covL->y[j][r]);
         }
         free(covL->v[j]);
-        // free(covL->y[j]);
     }
     free(covL->v);
-    // free(covL->y);
     free(covL);
 }
 
+/**
+*@brief Frees the memory of a given pooling layer.
+*
+*@param pol Pointer to the pooling layer to be freed.
+*/
 void freePoolLayer(PoolingLayer *pol)
 {
     printf("freePoolLayer!\n");
@@ -1112,6 +1067,11 @@ void freePoolLayer(PoolingLayer *pol)
     free(pol);
 }
 
+/**
+*@brief Frees the memory space of a fully connected output layer.
+*
+*@param FC Pointer to the fully connected output layer to free the memory space of.
+*/
 void freeFClayer(OutputLayer *FC)
 /*free space of Convolutional layer*/
 {
@@ -1122,6 +1082,13 @@ void freeFClayer(OutputLayer *FC)
     free(FC);
 }
 
+/**
+ * @brief Generates a 3D array for input data
+ *
+ * @param scal The number of input images
+ * @param size The width and height of each image
+ * @return uint8_t*** The generated 3D array
+ */
 uint8_t ***generate_input_array(int scal, int size)
 {
     uint8_t ***VMM_input_array = alloc_3darray(scal, size, IMCrow);
@@ -1129,6 +1096,13 @@ uint8_t ***generate_input_array(int scal, int size)
     return VMM_input_array;
 }
 
+/**
+ * @brief Generates a 3D array to hold the results
+ *
+ * @param scal The number of input images
+ * @param VMM_turns The number of times VMM mac operation needs to be applied
+ * @return uint8_t*** The generated 3D array
+ */
 uint8_t ***generate_result_array(int scal, int VMM_turns)
 {
     uint8_t ***result_list = alloc_3darray(scal, VMM_turns, IMCcol);
@@ -1136,22 +1110,13 @@ uint8_t ***generate_result_array(int scal, int VMM_turns)
     return result_list;
 }
 
-void free_data(uint8_t **data, size_t xlen, size_t ylen)
-{
-    size_t i, j;
-
-    for (i = 0; i < xlen; ++i)
-    {
-        if (data[i] != NULL)
-        {
-            for (j = 0; j < ylen; ++j)
-                free(data[i][j]);
-            free(data[i]);
-        }
-    }
-    free(data);
-}
-
+/**
+ * @brief Frees the memory allocated for a 3D array
+ *
+ * @param data The 3D array to free
+ * @param xlen The length of the x dimension
+ * @param ylen The length of the y dimension
+ */
 void free_3darray(uint8_t ***data, size_t xlen, size_t ylen)
 {
     size_t i, j;
@@ -1169,6 +1134,12 @@ void free_3darray(uint8_t ***data, size_t xlen, size_t ylen)
     printf("done!\n");
 }
 
+/**
+ * @brief Frees the memory allocated for a 2D array
+ *
+ * @param data The 2D array to free
+ * @param xlen The length of the x dimension
+ */
 void free_2darray(uint8_t **data, size_t xlen)
 {
     size_t i, j;
@@ -1181,6 +1152,13 @@ void free_2darray(uint8_t **data, size_t xlen)
     free(data);
 }
 
+/**
+ * @brief Frees the memory allocated for an array of images
+ *
+ * @param image_array The array of images to free
+ * @param rows The number of rows in each image
+ * @param number_of_images The number of images to free
+ */
 void free_image(ImageArray image_array, int rows, int number_of_images)
 {
     for (int i = 0; i < number_of_images; ++i) // Images from 0 -> number_of_images-1
@@ -1197,6 +1175,14 @@ void free_image(ImageArray image_array, int rows, int number_of_images)
     free(image_array);
 }
 
+/**
+*@brief Allocates a 3D array with dimensions xlen, ylen, and zlen.
+*
+*@param xlen The length of the first dimension.
+*@param ylen The length of the second dimension.
+*@param zlen The length of the third dimension.
+*@return A pointer to the allocated 3D array.
+*/
 uint8_t ***alloc_3darray(size_t xlen, size_t ylen, size_t zlen)
 {
     uint8_t ***p;
@@ -1235,6 +1221,13 @@ uint8_t ***alloc_3darray(size_t xlen, size_t ylen, size_t zlen)
     return p;
 }
 
+/**
+*@brief Allocates a 2D array with dimensions xlen and ylen.
+*
+*@param xlen The length of the first dimension.
+*@param ylen The length of the second dimension.
+*@return A pointer to the allocated 2D array.
+*/
 uint8_t **alloc_2darray(size_t xlen, size_t ylen)
 {
     uint8_t **p;
@@ -1260,6 +1253,12 @@ uint8_t **alloc_2darray(size_t xlen, size_t ylen)
     return p;
 }
 
+/**
+*@brief Allocates a 1D array with length xlen.
+*
+*@param xlen The length of the array.
+*@return A pointer to the allocated 1D array.
+*/
 uint8_t *alloc_1darray(size_t xlen)
 {
     uint8_t *p;

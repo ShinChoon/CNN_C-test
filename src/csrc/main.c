@@ -22,6 +22,12 @@
 #define OUTPUT_ADC A_CORE_AXI4LVMM + 0x0C
 #endif
 
+/**
+*@brief Writes data to VMM at the specified address in write mode.
+*
+*@param address Address of the VMM to write to.
+*@param data Data to write to VMM.
+*/
 void write_VMM(int address, uint8_t data)
 {
 #ifdef ACORE
@@ -41,6 +47,9 @@ void write_VMM(int address, uint8_t data)
 #endif
 }
 
+/**
+*@brief Sets the VMM to read mode.
+*/
 void set_readmode()
 {
 #ifdef ACORE
@@ -52,6 +61,12 @@ void set_readmode()
 #endif
 }
 
+/**
+*@brief Reads data from VMM at the specified index.
+*
+*@param index Index of the VMM to read from.
+*@return volatile uint8_t Returns the value read from VMM.
+*/
 volatile uint8_t read_VMM(int index)
 {
 #ifdef ACORE
@@ -63,6 +78,9 @@ volatile uint8_t read_VMM(int index)
 #endif
 }
 
+/**
+*@brief Resets the VMM to initial state.
+*/
 void reset_VMM()
 {
 #ifdef ACORE
@@ -75,6 +93,12 @@ void reset_VMM()
 #endif
 }
 
+/**
+*@brief Feeds the weights to VMM for a given scale.
+*
+*@param weight_array Pointer to the 3D weight array.
+*@param scal Index of the scale.
+*/
 void FeedVMM_weights(uint8_t ***weight_array, uint8_t scal)
 {
     // printf("\n");
@@ -97,6 +121,17 @@ void FeedVMM_weights(uint8_t ***weight_array, uint8_t scal)
     // printf("\n");
 }
 
+/**
+*@brief Feeds an input image to the VMM
+*This function takes a 3D array representing an input image for the VMM and
+*feeds it to the VMM one row at a time. It iterates over the rows of the
+*image, and for each row, it writes the pixel data to the corresponding
+*address in the VMM.
+*
+*@param VMMarray The 3D array representing the input image for the VMM
+*@param pagenumber The index of the current image being fed to the VMM
+*@param scal The current scale of the input image
+*/
 void FeedVMM_image(uint8_t ***VMMarray, uint8_t pagenumber, uint8_t scal)
 {
     // printf("\n");
@@ -113,6 +148,18 @@ void FeedVMM_image(uint8_t ***VMMarray, uint8_t pagenumber, uint8_t scal)
     // printf("\n");
 }
 
+/**
+
+*@brief Read the results at the end of each column in VMM for a layer
+*This function performs the reading peration to compute the output of a
+*layer. It reads the pixel data from the VMM one pixel at a time, performs
+*the multiplication and accumulation operation, and stores the result in a
+*3D array representing the output of the layer.
+
+*@param result_list The 3D array representing the output of the layer
+*@param pagenumber The index of the current image being processed
+*@param scal The current scale of the image being processed
+*/
 void VMMMACoperation(uint8_t ***result_list, int pagenumber, int scal)
 {
     uint8_t result = 0;
@@ -126,6 +173,17 @@ void VMMMACoperation(uint8_t ***result_list, int pagenumber, int scal)
     }
     // printf("\n");
 }
+
+/**
+*@brief Converts a binary fixed-point number to a float
+*This function takes a binary fixed-point number represented as a uint8_t and
+*converts it to a float. The binary fixed-point number is assumed to have a
+*signed 2-bit integer part and a signed 6-bit fractional part. The function
+*returns a float that represents the same number.
+*
+*@param number The binary fixed-point number to convert
+*@return float The equivalent floating-point representation of the number
+*/
 
 float bin_float_for_activation(uint8_t number)
 /*this function return float number which can not be shown in ACORE!!!*/
@@ -145,6 +203,9 @@ float bin_float_for_activation(uint8_t number)
 
 void main()
 {
+/**
+ * @brief Prints a welcome message for the A-Core vmm test
+ */
     printf("Welcome to A-Core for vmm test!\n");
 
     /*Setup CNN*/
@@ -212,7 +273,7 @@ void main()
             FeedVMM_image(VMM_input_array, page_image, i);
             VMMMACoperation(result_list, page_image, i); // feedVMM and write VMMmac should be looped by scal right?
 #else
-            vmm->MACoperation(cnn->C1, VMM_input_array, result_list, weight_array, page_image, i,1);
+            vmm->MACoperation(cnn->C1, VMM_input_array, result_list, weight_array, page_image, i, 1);
 #endif
         }
         printf("\n");
@@ -226,47 +287,29 @@ void main()
 
     printf("save image!!\n");
     _CnnFF(cnn->C1, cnn->S2);
-    for (int ch_i = 0; ch_i < 4; ch_i++)
-    {
-        for (int i = 0; i < 28; i++)
+
+    #ifndef ACORE
+
+        for (int ch_i = 0; ch_i < 4; ch_i++)
         {
-            for (int h = 0; h < 28; h++)
+            for (int i = 0; i < 14; i++)
             {
-                // #ifndef ACORE
-                // float number = bin_float_for_activation(cnn->C1->v[ch_i][i][h]);
-                // printf("%.3f ", number);
-                // #else
-                uint8_t number = cnn->C1->v[ch_i][i][h];
-                printf("%d ", number);
-                // #endif
+                for (int h = 0; h < 14; h++)
+                    printf("%d ", *(cnn->S2->y[ch_i][i][h]));
+                printf("\n");
             }
             printf("\n");
         }
-        printf("\n");
-    }
+    #else
 
-    // #ifndef ACORE
+        for (int ch_i = 0; ch_i < 4; ch_i++)
+        {
+            save_image(14, cnn->S2->y[ch_i]);
+            printf("\n");
+            printf("\n");
+        }
 
-    //     for (int ch_i = 0; ch_i < 4; ch_i++)
-    //     {
-    //         for (int i = 0; i < 14; i++)
-    //         {
-    //             for (int h = 0; h < 14; h++)
-    //                 printf("%d ", *(cnn->S2->y[ch_i][i][h]));
-    //             printf("\n");
-    //         }
-    //         printf("\n");
-    //     }
-    // #else
-
-    //     for (int ch_i = 0; ch_i < 4; ch_i++)
-    //     {
-    //         save_image(14, cnn->S2->y[ch_i]);
-    //         printf("\n");
-    //         printf("\n");
-    //     }
-
-    // #endif
+    #endif
 
     /*2nd convolution*/
     /*set up VMM*/
@@ -323,7 +366,7 @@ void main()
 #ifdef ACORE
             VMMMACoperation(result_list2, page_image, i); // feedVMM and write VMMmac should be looped by scal right?
 #else
-            vmm->MACoperation(cnn->C3, VMM_input_array2, result_list2, weight_array2, page_image, i,2);
+            vmm->MACoperation(cnn->C3, VMM_input_array2, result_list2, weight_array2, page_image, i, 2);
 #endif
         }
     }
@@ -331,29 +374,29 @@ void main()
     Conv_image(cnn->C3, cnn->S4, result_list2, VMM_turns, weights_number, scal, 2);
     printf("save image!!\n");
     _CnnFF(cnn->C3, cnn->S4);
-    for (int ch_i = 0; ch_i < 8; ch_i++)
-    {
-        for (int i = 0; i < 12; i++)
+    #ifndef ACORE
+
+        for (int ch_i = 0; ch_i < 8; ch_i++)
         {
-            for (int h = 0; h < 12; h++)
+            for (int i = 0; i < 6; i++)
             {
-                printf("%d ", cnn->C3->v[ch_i][i][h]);
-                // float answer = (cnn->C3->v[ch_i][i][h] / 4) * 0.25 - 3.9375 - 3.9375/2;
-                // if (answer > -3)
-                // printf("%.2f ", answer);
-                // else
-                // printf("%d ", 0);
+                for (int h = 0; h < 6; h++)
+                    printf("%d ", *(cnn->S2->y[ch_i][i][h]));
+                printf("\n");
             }
             printf("\n");
         }
-        printf("\n");
-    }
-    // for (int ch_i = 0; ch_i < 8; ch_i++)
-    // {
-    //     save_image(6, cnn->S4->y[ch_i]);
-    //     printf("\n");
-    //     printf("\n");
-    // }
+    #else
+
+        for (int ch_i = 0; ch_i < 8; ch_i++)
+        {
+            save_image(6, cnn->S2->y[ch_i]);
+            printf("\n");
+            printf("\n");
+        }
+
+    #endif
+
     free_3darray(VMM_input_array2, scal, VMM_turns);
     free_3darray(result_list2, scal, VMM_turns);
     free_3darray(weight_array2, scal, IMCcol);
@@ -428,6 +471,14 @@ void main()
     free_3darray(weight_array3, 1, IMCcol);
     free_3darray(VMM_input_array3, 1, scal);
     free_3darray(result_list3, 1, scal);
+
+/* fully connected*/
+#ifdef ACORE
+    reset_VMM();
+#else
+    free(vmm); // important although only 24 bytes
+    vmm = initializeVMM(cnn);
+#endif
 
     uint8_t ***outputO5_list = alloc_3darray(1,
                                              1,

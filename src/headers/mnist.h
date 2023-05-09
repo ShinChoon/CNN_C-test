@@ -26,10 +26,4 @@ typedef struct MnistLabelArray{ //Structrue for Mnist Label Arrary
 	MnistLabel* label_point;      //Point for Mnist labels array
 } *LabelArray;                  //Mnist labels array
 
-LabelArray ReadLabels(const char* filename);  //Read labels function
-ImageArray ReadImages(const char* filename);   //Read Images function
-void SaveImage(ImageArray imgarr,char* filedir); //Save Images function.
-
-int ReverseInt(int integer);
-
 #endif

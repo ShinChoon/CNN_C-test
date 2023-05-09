@@ -88,43 +88,16 @@ typedef struct TrainOptions
 	uint8_t alpha;
 } TrainOptions;
 
-void CnnSetup(Cnn *cnn, MatSize inputSize, int outputSize);
-
-void CnnTrain(Cnn *cnn, ImageArray inputData, LabelArray outputData,
-			  TrainOptions opts, int trainNum);
-
-uint8_t CnnTest(Cnn *cnn, ImageArray inputData, LabelArray outputData, int testNum);
-
-void SaveCnn(Cnn *cnn, const char *filename);
-
-void ImportCnn(Cnn *cnn, const char *filename);
-
 CovLayer *InitialCovLayer(int input_width, int input_height, int map_size,
 						  int input_channels, int output_channels, int mode_conv);
-void CovLayerConnect(CovLayer *covL, bool *connect_model);
 
 PoolingLayer *InitialPoolingLayer(int input_width, int inputHeigh, int map_size,
 								  int input_channels, int output_channels, int pooling_type);
-void PoolingLayerConnect(PoolingLayer *poolL, bool *connect_model);
 
 OutputLayer *InitOutputLayer(int input_num, int output_num);
 
-uint8_t ActivationSigma(uint8_t input, uint8_t bas);
-uint8_t ActivationReLu(uint8_t input, uint16_t bas);
-
-void CnnFF(Cnn *cnn, uint8_t **inputData);
-void CnnBP(Cnn *cnn, uint8_t *outputData);
-void CnnApplyGrads(Cnn *cnn, TrainOptions opts, uint8_t **inputData);
-void CnnClear(Cnn *cnn);
-
-void AvgPooling(uint8_t **output, MatSize outputSize, uint8_t **input,
-				MatSize inputSize, int map_size);
 
 void MaxPooling(uint8_t ***output, MatSize outputSize, uint8_t **input,
 				MatSize inputSize, int map_size);
-
-void nnff(uint8_t *output, uint8_t *input, uint8_t **wdata, uint8_t *bas, MatSize nnSize);
-
-void SaveCnnData(Cnn *cnn, const char *filename, uint8_t **inputdata);
 
 #endif

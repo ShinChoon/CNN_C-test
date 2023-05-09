@@ -1,6 +1,13 @@
 #include "vmm.h"
 #include <math.h>
 
+/**
+ * @brief Converts a float number to an 8-bit integer using a specific base and resolution.
+ *
+ * @param source The float number to convert.
+ * @return uint8_t The 8-bit integer representation of the input float number.
+ */
+
 uint8_t float_int8(float source)
 {
     uint8_t answer = 0;
@@ -11,6 +18,12 @@ uint8_t float_int8(float source)
     return answer;
 }
 
+/**
+ * @brief Converts a float number to an 8-bit binary number using the functionality of quantization in ReLU.
+ *
+ * @param _number The float number to convert.
+ * @return uint8_t The 8-bit binary representation of the input float number.
+ */
 uint8_t float_bin_for_result(float _number)
 /*take the functionality of quantization in RELU*/
 {
@@ -24,6 +37,12 @@ uint8_t float_bin_for_result(float _number)
     return result;
 }
 
+/**
+ * @brief Converts an 8-bit binary number to a float number using the functionality of quantization in ReLU.
+ *
+ * @param _number The 8-bit binary number to convert.
+ * @return float The float representation of the input 8-bit binary number.
+ */
 float bin_float_for_result(uint8_t _number)
 /*take the functionality of quantization in RELU*/
 {
@@ -36,6 +55,14 @@ float bin_float_for_result(uint8_t _number)
     float result = number * 0.25 - 3.9375;
     return result;
 }
+
+/**
+ * Converts an 8-bit integer in binary format to a floating point number for image data and weights.
+ *
+ * @param number The input 8-bit integer in binary format.
+ * @param isweight A flag indicating if the input is a weight or image data.
+ * @return The converted floating point number.
+ */
 
 float bin_float_for_image_weights(uint8_t number, int isweight)
 {
@@ -68,6 +95,12 @@ float bin_float_for_image_weights(uint8_t number, int isweight)
     return answer_in;
 }
 
+/**
+ * Converts an 8-bit integer to a floating point number for bias.
+ *
+ * @param number The input 8-bit integer.
+ * @return The converted floating point number.
+ */
 float bin_float_for_bias(int8_t number)
 {
     int sign = 1;

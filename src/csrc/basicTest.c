@@ -113,10 +113,10 @@ void _CnnFF(CovLayer *conv_layer, PoolingLayer *pool_layer)
 
     for (int i = 0; i < (pool_layer->output_channels); i++)
     {
-        if (pool_layer->pooling_type == AVG_POOLING)
-            AvgPooling(pool_layer->y[i], output_size, conv_layer->v[i],
-                       input_size, pool_layer->map_size);
-        else if (pool_layer->pooling_type == MAX_POOLING)
+        // if (pool_layer->pooling_type == AVG_POOLING)
+        //     AvgPooling(pool_layer->y[i], output_size, conv_layer->v[i],
+        //                input_size, pool_layer->map_size);
+        if (pool_layer->pooling_type == MAX_POOLING)
             MaxPooling(pool_layer->y[i], output_size, conv_layer->v[i],
                        input_size, pool_layer->map_size);
     }

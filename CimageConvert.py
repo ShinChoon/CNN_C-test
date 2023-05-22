@@ -57,7 +57,7 @@ mini_batch_size = 10
 test_data = load_data_shared()
 testx, texty =  test_data
 take_batch = testx[i*mini_batch_size:(i+5)*mini_batch_size]
-resize_image = resize_images(take_batch[9])
+resize_image = resize_images(take_batch[6])
 
 print("#ifndef _IMAGE_H")
 print("#define _IMAGE_H")

@@ -15,9 +15,8 @@
 #define LAYER1_SPLIT 28
 
 #ifdef ACORE
+#define VMM_RESET_CONTROL A_CORE_AXI4LVMM + 0x00
 #define SRAM_DIN_CONTROL_ADDR A_CORE_AXI4LVMM + 0x04
-#define SRAM_din A_CORE_AXI4LVMM + 0x05
-#define SRAM_wr_rd_addr A_CORE_AXI4LVMM + 0x06
 #define OUTPUT_ADC_READY A_CORE_AXI4LVMM + 0x08
 #define OUTPUT_ADC A_CORE_AXI4LVMM + 0x0C
 #endif
@@ -39,7 +38,7 @@ void write_VMM(int address, uint8_t data)
     info |= ((volatile uint8_t)data << 16);
     /*avoid any moment to make VMM reset without order*/
     info |= (1UL << 14);  // wr
-    info &= ~(1UL << 13); // rd
+    info &= ~(1UL << 13); // rd  *bit mask prevent reset happening
     info |= (volatile char)high_bits << 8;
     info |= (volatile uint8_t)low_bits << 0;
 
@@ -60,6 +59,35 @@ void set_readmode()
     gpo_write((volatile uint32_t *)(SRAM_DIN_CONTROL_ADDR), info); /*set read mode*/
 #endif
 }
+
+/**
+ *@brief Reads vmm_reset_control
+ *
+ *@return volatile uint32_t Returns the reset_control from VMM.
+ */
+volatile uint32_t read_vmm_reset_control()
+{
+#ifdef ACORE
+    delay(1);
+    volatile uint32_t info = gpi_read((volatile uint32_t *)VMM_RESET_CONTROL);
+    return info;
+#endif
+}
+
+/**
+ *@brief Reads vmm_ready_sram_dout
+ *
+ *@return volatile uint32_t Returns the ready_dout from VMM.
+ */
+volatile uint32_t read_sram_ready_dout()
+{
+#ifdef ACORE
+    delay(1);
+    volatile uint32_t info = gpi_read((volatile uint32_t *)OUTPUT_ADC_READY);
+    return info;
+#endif
+}
+
 
 /**
 *@brief Reads data from VMM at the specified index.
@@ -89,7 +117,9 @@ void reset_VMM()
     info &= ~(1UL << 14); // wr
     info &= ~(1UL << 13); // rd
 
-    gpo_write((volatile uint32_t *)(A_CORE_AXI4LVMM + 0x4), info);
+    // gpo_write((volatile uint32_t *)(A_CORE_AXI4LVMM + 0x4), info);
+    gpo_write((volatile uint32_t *)(SRAM_DIN_CONTROL_ADDR), info);
+
 #endif
 }
 
@@ -201,12 +231,53 @@ float bin_float_for_activation(uint8_t number)
     return answer_in;
 }
 
+void set_sh_en(unsigned char num)
+{
+#ifdef ACORE
+    uint32_t info = read_vmm_reset_control();
+    if(num)
+    {
+        info |= (1UL << 2); // sh_en
+    }
+    else
+    {
+        info &= ~(1UL << 2); // sh_en
+    }
+    info |= (1UL << 3); //reset_adc
+    info |= (1UL << 4); //reset_sram
+    info |= (1UL << 5); //reset_op_comp
+    info |= (1UL << 6); //reset_ip_comp
+
+    gpo_write((volatile uint32_t *)(VMM_RESET_CONTROL), info);
+#endif;
+}
+
+void wait_hold_adc_both_ready()
+{
+#ifdef ACORE
+    uint32_t info = read_sram_ready_dout();
+    volatile uint32_t mask1 = 0;
+    volatile uint32_t mask2 = 0;
+
+    mask1 |= 1UL << 8;
+    mask2 |= 1UL << 9;
+    while(info&mask1==0||info&mask2==0);
+#endif
+}
+
 void main()
 {
 /**
  * @brief Prints a welcome message for the A-Core vmm test
  */
     printf("Welcome to A-Core for vmm test!\n");
+
+    // Count program time
+    clock_t start_t, end_t;
+    start_t = clock();
+    uint64_t start_instret, end_instret;
+    #ifdef ACORE
+    #endif
 
     /*Setup CNN*/
     Cnn *cnn = calloc(1, sizeof(*cnn));
@@ -258,6 +329,16 @@ void main()
     inputs_mapping_Conv(cnn->C1, image_input, VMM_input_array, &VMM_turns, scal, 1);
     free_3darray(image_input, 1, 30);
 
+    /*counting time and instructions*/
+    #ifdef ACORE
+    end_instret = get_instret();
+    end_t = clock();
+    long int total_t = (long int)(end_t - start_t);
+    long int total_instret = (long int)(end_instret - start_instret);
+    printf("C1_1 Program duratget_instretion: %ld cycles\n", total_t);
+    printf("C1_1 Instructions retired: %ld\n", total_instret);
+    #endif
+
     printf("@@@@finish mapping\n");
     for (uint8_t i = 0; i < scal; i++)
     /*foor loop by 4 here*/
@@ -270,7 +351,10 @@ void main()
         {
 // printf("reading\n");
 #ifdef ACORE
+            set_sh_en(0);
             FeedVMM_image(VMM_input_array, page_image, i);
+            set_sh_en(1);
+            wait_hold_adc_both_ready();
             VMMMACoperation(result_list, page_image, i); // feedVMM and write VMMmac should be looped by scal right?
 #else
             vmm->MACoperation(cnn->C1, VMM_input_array, result_list, weight_array, page_image, i, 1);
@@ -278,6 +362,15 @@ void main()
         }
         printf("\n");
     }
+
+
+    /*counting time and instructions*/
+    start_t = clock();
+    #ifdef ACORE
+        start_instret = get_instret();
+    #endif
+
+
     printf("@@@@@@@@@@@@@Convimage: %d\n", VMM_turns);
 
     Conv_image(cnn->C1, cnn->S2, result_list, VMM_turns, weights_number, scal, 1);
@@ -288,28 +381,57 @@ void main()
     printf("save image!!\n");
     _CnnFF(cnn->C1, cnn->S2);
 
-    #ifndef ACORE
+#ifdef ACORE
+    /*counting time and instructions*/
+    end_instret = get_instret();
+    end_t = clock();
+    total_t = (long int)(end_t - start_t);
+    total_instret = (long int)(end_instret - start_instret);
+    printf("C1_2 Program duratget_instretion: %ld cycles\n", total_t);
+    printf("C1_2 Instructions retired: %ld\n", total_instret);
+#endif
 
-        for (int ch_i = 0; ch_i < 4; ch_i++)
-        {
-            for (int i = 0; i < 14; i++)
-            {
-                for (int h = 0; h < 14; h++)
-                    printf("%d ", *(cnn->S2->y[ch_i][i][h]));
-                printf("\n");
-            }
-            printf("\n");
-        }
-    #else
+    // for (int ch_i = 0; ch_i < 4; ch_i++)
+    // {
+    //     for (int i = 0; i < 28; i++)
+    //     {
+    //         for (int h = 0; h < 28; h++)
+    //         {
+    //             // #ifndef ACORE
+    //             // float number = bin_float_for_activation(cnn->C1->v[ch_i][i][h]);
+    //             // printf("%.3f ", number);
+    //             // #else
+    //             uint8_t number = cnn->C1->v[ch_i][i][h];
+    //             printf("%d ", number);
+    //             // #endif
+    //         }
+    //         printf("\n");
+    //     }
+    //     printf("\n");
+    // }
 
-        for (int ch_i = 0; ch_i < 4; ch_i++)
-        {
-            save_image(14, cnn->S2->y[ch_i]);
-            printf("\n");
-            printf("\n");
-        }
+    // #ifndef ACORE
 
-    #endif
+    //     for (int ch_i = 0; ch_i < 4; ch_i++)
+    //     {
+    //         for (int i = 0; i < 14; i++)
+    //         {
+    //             for (int h = 0; h < 14; h++)
+    //                 printf("%d ", *(cnn->S2->y[ch_i][i][h]));
+    //             printf("\n");
+    //         }
+    //         printf("\n");
+    //     }
+    // #else
+
+    //     for (int ch_i = 0; ch_i < 4; ch_i++)
+    //     {
+    //         save_image(14, cnn->S2->y[ch_i]);
+    //         printf("\n");
+    //         printf("\n");
+    //     }
+
+    // #endif
 
     /*2nd convolution*/
     /*set up VMM*/
@@ -319,6 +441,13 @@ void main()
     free(vmm); // important although only 24 bytes
     vmm = initializeVMM(cnn);
 #endif
+
+    /*counting time and instructions*/
+    start_t = clock();
+    #ifdef ACORE
+        start_instret = get_instret();
+    #endif
+
     int map_size = 3;
     scal = 2;
     column_dex = 0;
@@ -353,6 +482,17 @@ void main()
     printf("inputs_mapping_Conv!!!!\n");
     inputs_mapping_Conv(cnn->C3, outputS2_list, VMM_input_array2,
                         &VMM_turns, scal, 2);
+
+    /*counting time and instructions*/
+#ifdef ACORE
+    end_instret = get_instret();
+    end_t = clock();
+    total_t = (long int)(end_t - start_t);
+    total_instret = (long int)(end_instret - start_instret);
+    printf("C3_1 Program duratget_instretion: %ld cycles\n", total_t);
+    printf("C3_1 Instructions retired: %ld\n", total_instret);
+#endif
+
     printf("@@@@finish mapping\n");
     for (uint8_t i = 0; i < scal; i++)
     {
@@ -362,8 +502,11 @@ void main()
         FeedVMM_weights(weight_array2, i);
         for (int page_image = 0; page_image < VMM_turns; page_image++)
         {
-            FeedVMM_image(VMM_input_array2, page_image, i);
 #ifdef ACORE
+            set_sh_en(0);
+            FeedVMM_image(VMM_input_array2, page_image, i);
+            set_sh_en(1);
+            wait_hold_adc_both_ready();
             VMMMACoperation(result_list2, page_image, i); // feedVMM and write VMMmac should be looped by scal right?
 #else
             vmm->MACoperation(cnn->C3, VMM_input_array2, result_list2, weight_array2, page_image, i, 2);
@@ -374,29 +517,41 @@ void main()
     Conv_image(cnn->C3, cnn->S4, result_list2, VMM_turns, weights_number, scal, 2);
     printf("save image!!\n");
     _CnnFF(cnn->C3, cnn->S4);
-    #ifndef ACORE
 
-        for (int ch_i = 0; ch_i < 8; ch_i++)
-        {
-            for (int i = 0; i < 6; i++)
-            {
-                for (int h = 0; h < 6; h++)
-                    printf("%d ", *(cnn->S2->y[ch_i][i][h]));
-                printf("\n");
-            }
-            printf("\n");
-        }
-    #else
+    /*counting time and instructions*/
+#ifdef ACORE
+    end_instret = get_instret();
+    end_t = clock();
+    total_t = (long int)(end_t - start_t);
+    total_instret = (long int)(end_instret - start_instret);
+    printf("C3_2 Program duratget_instretion: %ld cycles\n", total_t);
+    printf("C3_2 Instructions retired: %ld\n", total_instret);
+#endif
 
-        for (int ch_i = 0; ch_i < 8; ch_i++)
-        {
-            save_image(6, cnn->S2->y[ch_i]);
-            printf("\n");
-            printf("\n");
-        }
+    // for (int ch_i = 0; ch_i < 8; ch_i++)
+    // {
+    //     for (int i = 0; i < 12; i++)
+    //     {
+    //         for (int h = 0; h < 12; h++)
+    //         {
+    //             printf("%d ", cnn->C3->v[ch_i][i][h]);
 
-    #endif
-
+    //             // float answer = (cnn->C3->v[ch_i][i][h] / 4) * 0.25 - 3.9375 - 3.9375/2;
+    //             // if (answer > -3)
+    //             // printf("%.2f ", answer);
+    //             // else
+    //             // printf("%d ", 0);
+    //         }
+    //         printf("\n");
+    //     }
+    //     printf("\n");
+    // }
+    // for (int ch_i = 0; ch_i < 8; ch_i++)
+    // {
+    //     save_image(6, cnn->S4->y[ch_i]);
+    //     printf("\n");
+    //     printf("\n");
+    // }
     free_3darray(VMM_input_array2, scal, VMM_turns);
     free_3darray(result_list2, scal, VMM_turns);
     free_3darray(weight_array2, scal, IMCcol);
@@ -409,6 +564,13 @@ void main()
     free(vmm); // important although only 24 bytes
     vmm = initializeVMM(cnn);
 #endif
+
+    /*counting time and instructions*/
+    start_t = clock();
+    #ifdef ACORE
+        start_instret = get_instret();
+    #endif
+
     map_size = 3;
     scal = 8;
     column_dex = 0;
@@ -443,6 +605,16 @@ void main()
 
     printf("@@@@finish mapping\n");
 
+    /*counting time and instructions*/
+    #ifdef ACORE
+    end_instret = get_instret();
+    end_t = clock();
+    total_t = (long int)(end_t - start_t);
+    total_instret = (long int)(end_instret - start_instret);
+    printf("O5_1 Program duratget_instretion: %ld cycles\n", total_t);
+    printf("O5_1 Instructions retired: %ld\n", total_instret);
+    #endif
+
     for (uint8_t i = 0; i < scal; i++)
     {
         weights_mapping_FC(cnn->O5, weight_array3, 3, i);
@@ -450,16 +622,35 @@ void main()
         printf("writing weights!\n");
         printf("\n");
         FeedVMM_weights(weight_array3, 0); // updated in the wights mapping
-        FeedVMM_image(VMM_input_array3, i, 0);
 #ifdef ACORE
+        set_sh_en(0);
+        FeedVMM_image(VMM_input_array3, i, 0);
+        set_sh_en(1);
+        wait_hold_adc_both_ready();
         VMMMACoperation(result_list3, i, 0); // feedVMM and write VMMmac should be looped by scal right?
 #else
         vmm->MACoperation(cnn->O5, VMM_input_array3, result_list3,
                           weight_array3, i, 0, 3);
 #endif
     }
+    /*counting time and instructions*/
+    start_t = clock();
+    #ifdef ACORE
+        start_instret = get_instret();
+    #endif
 
     FC_image(cnn->O5, result_list3, scal, 3);
+
+    /*counting time and instructions*/
+#ifdef ACORE
+    end_instret = get_instret();
+    end_t = clock();
+    total_t = (long int)(end_t - start_t);
+    total_instret = (long int)(end_instret - start_instret);
+    printf("O5_2 Program duratget_instretion: %ld cycles\n", total_t);
+    printf("O5_2 Instructions retired: %ld\n", total_instret);
+#endif
+
     printf("save image!!\n");
 
     for (int i = 0; i < cnn->O5->output_num; i++)
@@ -479,6 +670,12 @@ void main()
     free(vmm); // important although only 24 bytes
     vmm = initializeVMM(cnn);
 #endif
+
+    /*counting time and instructions*/
+    start_t = clock();
+    #ifdef ACORE
+        start_instret = get_instret();
+    #endif
 
     uint8_t ***outputO5_list = alloc_3darray(1,
                                              1,
@@ -504,6 +701,16 @@ void main()
 
     free_3darray(outputO5_list, 1, 1);
 
+    /*counting time and instructions*/
+#ifdef ACORE
+    end_instret = get_instret();
+    end_t = clock();
+    total_t = (long int)(end_t - start_t);
+    total_instret = (long int)(end_instret - start_instret);
+    printf("O6_1 Program duratget_instretion: %ld cycles\n", total_t);
+    printf("O6_1 Instructions retired: %ld\n", total_instret);
+#endif
+
     printf("@@@@finish mapping\n");
 
     for (uint8_t i = 0; i < scal; i++)
@@ -513,15 +720,36 @@ void main()
         printf("writing weights!\n");
         printf("\n");
         FeedVMM_weights(weight_array4, 0); // updated in the wights mapping
-        FeedVMM_image(VMM_input_array4, i, 0);
 #ifdef ACORE
+        set_sh_en(0);
+        FeedVMM_image(VMM_input_array4, i, 0);
+        set_sh_en(1);
+        wait_hold_adc_both_ready();
         VMMMACoperation(result_list4, i, 0); // feedVMM and write VMMmac should be looped by scal right?
 #else
         vmm->MACoperation(cnn->O6, VMM_input_array4, result_list4,
                           weight_array4, i, 0, 4);
 #endif
     }
+
+    /*counting time and instructions*/
+    start_t = clock();
+    #ifdef ACORE
+        start_instret = get_instret();
+    #endif
+
     FC_image(cnn->O6, result_list4, scal, 4);
+
+    /*counting time and instructions*/
+#ifdef ACORE
+    end_instret = get_instret();
+    end_t = clock();
+    total_t = (long int)(end_t - start_t);
+    total_instret = (long int)(end_instret - start_instret);
+    printf("O6_2 Program duratget_instretion: %ld cycles\n", total_t);
+    printf("O6_2 Instructions retired: %ld\n", total_instret);
+#endif
+
     printf("save image!!\n");
     for (int i = 0; i < cnn->O6->output_num; i++)
     {
